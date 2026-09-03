@@ -113,6 +113,44 @@ services:
 打开 `http://你的IP:5211`，默认管理员密码均为admin。  
 需要 FUSE 时请确保宿主机具备 `/dev/fuse` 权限。
 
+**飞牛 NAS** · 使用仓库内 `docker-compose.fnos.yml`，按本机路径改 `volumes` 后启动：
+
+```bash
+docker compose -f docker-compose.fnos.yml up -d
+```
+
+**从源码编译** · 需要 Node.js 20+、Go 1.26.4
+
+```bash
+# 构建前端静态资源（输出到 internal/api/web）
+cd web
+npm ci
+npm run build
+
+# 编译后端（含 FUSE 挂载）
+cd ..
+go build -tags fuse -trimpath -ldflags="-s -w" -o litepan ./cmd/litepan
+
+# 启动，默认监听 :5211，数据目录 ./data，STRM 目录 ./strm
+./litepan
+```
+
+无 FUSE 需求时改用 `go build -trimpath -ldflags="-s -w" -o litepan ./cmd/litepan`。  
+可用 `-listen`、`-data-dir`、`-strm-dir` 覆盖监听地址和目录，也可用环境变量 `LITEPAN_LISTEN`、`LITEPAN_DATA_DIR`、`LITEPAN_STRM_DIR`、`LITEPAN_LOG_LEVEL`。
+
+**本地构建镜像**
+
+```bash
+docker compose up -d --build
+```
+
+或：
+
+```bash
+make docker-build
+make docker-up
+```
+
 > [!WARNING]
 > **不要用 `ponphil/litepan:latest` 部署本仓库对应的 Go 版。**  
 > `latest` 仍是 Python 旧版镜像。若你需要旧版程序与 Compose 脚本，请前往归档仓库：[LitePan-old](https://github.com/Ponphil/LitePan-old)。

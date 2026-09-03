@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"litepan/internal/mediaorganize/rules"
@@ -15,6 +16,7 @@ type movieNFO struct {
 	Title   string   `xml:"title"`
 	Year    string   `xml:"year,omitempty"`
 	TMDBID  string   `xml:"tmdbid,omitempty"`
+	Rating  string   `xml:"rating,omitempty"`
 	Plot    string   `xml:"plot,omitempty"`
 }
 
@@ -23,6 +25,7 @@ type tvshowNFO struct {
 	Title   string   `xml:"title"`
 	Year    string   `xml:"year,omitempty"`
 	TMDBID  string   `xml:"tmdbid,omitempty"`
+	Rating  string   `xml:"rating,omitempty"`
 	Plot    string   `xml:"plot,omitempty"`
 }
 
@@ -164,10 +167,11 @@ func listLocalSeasonNumbers(showDir string) []int {
 	return out
 }
 
-func writeMovieNFO(path, title, tmdbID, plot string, year *int) error {
+func writeMovieNFO(path, title, tmdbID, plot string, year *int, rating float64) error {
 	nfo := movieNFO{
 		Title:  strings.TrimSpace(title),
 		TMDBID: strings.TrimSpace(tmdbID),
+		Rating: formatTMDBRating(rating),
 		Plot:   strings.TrimSpace(plot),
 	}
 	if year != nil && *year > 0 {
@@ -176,16 +180,24 @@ func writeMovieNFO(path, title, tmdbID, plot string, year *int) error {
 	return writeXML(path, nfo)
 }
 
-func writeTVShowNFO(path, title, tmdbID, plot string, year *int) error {
+func writeTVShowNFO(path, title, tmdbID, plot string, year *int, rating float64) error {
 	nfo := tvshowNFO{
 		Title:  strings.TrimSpace(title),
 		TMDBID: strings.TrimSpace(tmdbID),
+		Rating: formatTMDBRating(rating),
 		Plot:   strings.TrimSpace(plot),
 	}
 	if year != nil && *year > 0 {
 		nfo.Year = fmt.Sprintf("%d", *year)
 	}
 	return writeXML(path, nfo)
+}
+
+func formatTMDBRating(rating float64) string {
+	if rating <= 0 {
+		return ""
+	}
+	return strconv.FormatFloat(rating, 'f', 1, 64)
 }
 
 func writeSeasonNFO(path string, season int, title, plot, premiered string) error {

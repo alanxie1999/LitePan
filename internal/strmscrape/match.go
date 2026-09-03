@@ -20,6 +20,7 @@ type tmdbInfo struct {
 	Year         *int
 	Plot         string
 	PosterPath   string
+	Rating       float64
 	MediaType    string
 	Doubt        bool
 	EpisodeCount int // 默认全剧集数；刮削时会按本地已有季收窄
@@ -191,10 +192,10 @@ func (s *Service) writeMatchedOpts(ctx context.Context, client *tmdb.Client, g w
 	nfo, poster := workMetaPaths(g, mediaType)
 	if overwrite || !fileExists(nfo) {
 		if mediaType == MediaTypeTV {
-			if err := writeTVShowNFO(nfo, info.Title, info.TMDBID, info.Plot, info.Year); err != nil {
+			if err := writeTVShowNFO(nfo, info.Title, info.TMDBID, info.Plot, info.Year, info.Rating); err != nil {
 				return 0, err
 			}
-		} else if err := writeMovieNFO(nfo, info.Title, info.TMDBID, info.Plot, info.Year); err != nil {
+		} else if err := writeMovieNFO(nfo, info.Title, info.TMDBID, info.Plot, info.Year, info.Rating); err != nil {
 			return 0, err
 		}
 	}
@@ -403,9 +404,37 @@ func decodeTMDBInfo(raw json.RawMessage, mediaType string) (tmdbInfo, error) {
 		Year:         year,
 		Plot:         plot,
 		PosterPath:   poster,
+		Rating:       asFloat(m["vote_average"]),
 		MediaType:    mediaType,
 		EpisodeCount: epCount,
 	}, nil
+}
+
+func asFloat(v any) float64 {
+	switch t := v.(type) {
+	case float64:
+		return t
+	case float32:
+		return float64(t)
+	case int:
+		return float64(t)
+	case int64:
+		return float64(t)
+	case json.Number:
+		f, err := t.Float64()
+		if err != nil {
+			return 0
+		}
+		return f
+	case string:
+		f, err := strconv.ParseFloat(strings.TrimSpace(t), 64)
+		if err != nil {
+			return 0
+		}
+		return f
+	default:
+		return 0
+	}
 }
 
 func mustRaw(m map[string]any) json.RawMessage {
