@@ -79,12 +79,12 @@
 
 ## ▎ 快速开始
 
-**Docker Compose 部署** · 镜像标签：`Beta`或指定`v0.5.4-Beta`
+**Docker Compose 部署** · 镜像标签：`v1.0`
 
 ```yaml
 services:
   litepan:
-    image: ajun59420/litepan:beta
+    image: ajun59420/litepan:v1.0
     container_name: litepan
     restart: unless-stopped
     ports:
