@@ -16,7 +16,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-const indexSchemaVersion = "2"
+const indexSchemaVersion = "3"
 
 // TaskIndexPath 返回任务刮削索引库路径：data/strmscrape/{task_id}.sqlite
 func TaskIndexPath(dataDir string, taskID int64) string {
@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS items (
   strm_name TEXT NOT NULL DEFAULT '',
   title TEXT NOT NULL DEFAULT '',
   year INTEGER,
+  rating REAL,
   media_type TEXT NOT NULL DEFAULT '',
   status TEXT NOT NULL DEFAULT '',
   has_nfo INTEGER NOT NULL DEFAULT 0,
@@ -228,17 +229,22 @@ func upsertItemTx(tx *sql.Tx, it Item, posterRel string) error {
 	if it.Year != nil {
 		year = *it.Year
 	}
+	var rating any
+	if it.Rating != nil {
+		rating = *it.Rating
+	}
 	_, err := tx.Exec(`
 INSERT INTO items (
-  id, rel_dir, strm_name, title, year, media_type, status,
+  id, rel_dir, strm_name, title, year, rating, media_type, status,
   has_nfo, has_poster, has_pending, manual_done, tmdb_id, poster_rel, folder_name,
   file_count, ep_local, ep_tmdb, ep_scraped, tv_state, added_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(id) DO UPDATE SET
   rel_dir=excluded.rel_dir,
   strm_name=excluded.strm_name,
   title=excluded.title,
   year=excluded.year,
+  rating=excluded.rating,
   media_type=excluded.media_type,
   status=excluded.status,
   has_nfo=excluded.has_nfo,
@@ -254,7 +260,7 @@ ON CONFLICT(id) DO UPDATE SET
   ep_scraped=excluded.ep_scraped,
   tv_state=excluded.tv_state,
   added_at=excluded.added_at
-`, it.ID, it.RelDir, it.StrmName, it.Title, year, it.MediaType, it.Status,
+`, it.ID, it.RelDir, it.StrmName, it.Title, year, rating, it.MediaType, it.Status,
 		boolToInt(it.HasNFO), boolToInt(it.HasPoster), boolToInt(it.HasPending), boolToInt(it.ManualDone),
 		it.TMDBID, posterRel, it.FolderName, it.FileCount, it.EpLocal, it.EpTMDB,
 		it.EpScraped, it.TVState, it.AddedAt)
@@ -382,10 +388,11 @@ func scanIndexItems(rows *sql.Rows, strmTaskID int64) ([]Item, error) {
 	for rows.Next() {
 		var it Item
 		var year sql.NullInt64
+		var rating sql.NullFloat64
 		var hasNFO, hasPoster, hasPending, manualDone int
 		var posterRel string
 		if err := rows.Scan(
-			&it.ID, &it.RelDir, &it.StrmName, &it.Title, &year, &it.MediaType, &it.Status,
+			&it.ID, &it.RelDir, &it.StrmName, &it.Title, &year, &rating, &it.MediaType, &it.Status,
 			&hasNFO, &hasPoster, &hasPending, &manualDone, &it.TMDBID, &posterRel, &it.FolderName,
 			&it.FileCount, &it.EpLocal, &it.EpTMDB, &it.EpScraped, &it.TVState, &it.AddedAt,
 		); err != nil {
@@ -398,6 +405,10 @@ func scanIndexItems(rows *sql.Rows, strmTaskID int64) ([]Item, error) {
 		if year.Valid {
 			y := int(year.Int64)
 			it.Year = &y
+		}
+		if rating.Valid && rating.Float64 > 0 {
+			v := rating.Float64
+			it.Rating = &v
 		}
 		it.PosterURL = posterURLFromRel(strmTaskID, posterRel)
 		out = append(out, it)
@@ -439,7 +450,7 @@ func (s *Service) listIndexItems(strmTaskID int64, query ItemListQuery) (ItemLis
 		return ItemListResult{}, err
 	}
 	querySQL := `
-SELECT id, rel_dir, strm_name, title, year, media_type, status,
+SELECT id, rel_dir, strm_name, title, year, rating, media_type, status,
        has_nfo, has_poster, has_pending, manual_done, tmdb_id, poster_rel, folder_name,
        file_count, ep_local, ep_tmdb, ep_scraped, tv_state, added_at
 FROM items

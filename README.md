@@ -79,12 +79,12 @@
 
 ## ▎ 快速开始
 
-**Docker Compose 部署** · 镜像标签：`v1.0`
+**Docker Compose 部署** · 镜像标签：`v1.1`
 
 ```yaml
 services:
   litepan:
-    image: ajun59420/litepan:v1.0
+    image: ajun59420/litepan:v1.1
     container_name: litepan
     restart: unless-stopped
     ports:

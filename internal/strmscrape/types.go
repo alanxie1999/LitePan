@@ -17,9 +17,10 @@ type Item struct {
 	ID         string `json:"id"`
 	RelDir     string `json:"rel_dir"`
 	StrmName   string `json:"strm_name,omitempty"`
-	Title      string `json:"title"`
-	Year       *int   `json:"year,omitempty"`
-	MediaType  string `json:"media_type"`
+	Title      string   `json:"title"`
+	Year       *int     `json:"year,omitempty"`
+	Rating     *float64 `json:"rating,omitempty"`
+	MediaType  string   `json:"media_type"`
 	Status     string `json:"status"`
 	HasNFO     bool   `json:"has_nfo"`
 	HasPoster  bool   `json:"has_poster"`

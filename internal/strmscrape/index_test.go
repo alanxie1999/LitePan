@@ -39,8 +39,9 @@ func TestIndexUpsertAndList(t *testing.T) {
 		t.Fatal(err)
 	}
 	year := 2021
+	rating := 8.2
 	it := Item{
-		ID: "abc", Title: "天龙八部", Year: &year, MediaType: MediaTypeTV,
+		ID: "abc", Title: "天龙八部", Year: &year, Rating: &rating, MediaType: MediaTypeTV,
 		Status: ItemStatusOK, HasNFO: true, HasPoster: true, HasPending: true, ManualDone: true,
 		TMDBID: "1", FolderName: "天龙八部 (2021)", FileCount: 2,
 		EpLocal: 1, EpTMDB: 40, TVState: TVStateUpdating, AddedAt: "2026-01-01T00:00:00Z",
@@ -78,6 +79,9 @@ func TestIndexUpsertAndList(t *testing.T) {
 	}
 	if got.Year == nil || *got.Year != 2021 {
 		t.Fatalf("year=%v", got.Year)
+	}
+	if got.Rating == nil || *got.Rating != 8.2 {
+		t.Fatalf("rating=%v", got.Rating)
 	}
 	if got.PosterURL == "" || !got.HasPoster {
 		t.Fatalf("poster url empty: %s", got.PosterURL)

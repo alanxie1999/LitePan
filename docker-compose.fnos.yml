@@ -1,6 +1,6 @@
 services:
   litepan:
-    image: ajun59420/litepan:v1.0
+    image: ajun59420/litepan:v1.1
     container_name: litepan
     environment:
       - TZ=Asia/Shanghai

@@ -478,6 +478,12 @@ function statusTitle(status: StrmScrapeItemStatus) {
   return "根目录 nfo / 海报已齐备";
 }
 
+function itemRatingText(item: StrmScrapeItem) {
+  const n = Number(item.rating);
+  if (!Number.isFinite(n) || n <= 0) return "";
+  return n.toFixed(1);
+}
+
 function episodeProgressText(item: StrmScrapeItem) {
   if (item.media_type !== "tv") {
     return item.file_count > 1 ? `${item.file_count} 个文件` : "";
@@ -1222,6 +1228,7 @@ defineExpose({
                 <div class="scrape-card__sub">
                   <span>{{ item.media_type === "tv" ? "剧集" : "电影" }}</span>
                   <span v-if="item.year && item.tv_state !== 'updating'">· {{ item.year }}</span>
+                  <span v-if="itemRatingText(item)" class="scrape-card__rating">· {{ itemRatingText(item) }}</span>
                   <span
                     v-if="episodeProgressText(item)"
                     :class="{ 'scrape-card__ep-gap': item.tv_state === 'updating' }"
@@ -1977,6 +1984,10 @@ defineExpose({
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.scrape-card__rating {
+  color: #ef4444;
+  font-weight: 700;
 }
 .scrape-card__ep-gap {
   color: var(--warning);

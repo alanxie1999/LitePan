@@ -17,6 +17,7 @@ export interface StrmScrapeItem {
   strm_name?: string;
   title: string;
   year?: number;
+  rating?: number;
   media_type: string;
   status: StrmScrapeItemStatus;
   has_nfo: boolean;
