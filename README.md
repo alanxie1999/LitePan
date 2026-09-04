@@ -1,3 +1,5 @@
+此项目仅自己增加了刮削评分，感谢原作者的付出
+
 <a name="readme-top"></a>
 
 <div align="center">
