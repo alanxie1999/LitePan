@@ -13,6 +13,7 @@ import (
 
 	"litepan/internal/domain"
 	"litepan/internal/eventbus"
+	"litepan/internal/file"
 	"litepan/internal/settings"
 	"litepan/internal/strm"
 )
@@ -24,6 +25,7 @@ const (
 
 type Options struct {
 	Strm     *strm.Service
+	Files    *file.Service
 	Settings *settings.Service
 	Bus      *eventbus.Bus
 	DataDir  string
@@ -33,6 +35,7 @@ type Options struct {
 
 type Service struct {
 	strm     *strm.Service
+	files    *file.Service
 	settings *settings.Service
 	bus      *eventbus.Bus
 	dataDir  string
@@ -57,6 +60,7 @@ func New(opts Options) *Service {
 	}
 	return &Service{
 		strm:     opts.Strm,
+		files:    opts.Files,
 		settings: opts.Settings,
 		bus:      opts.Bus,
 		dataDir:  opts.DataDir,

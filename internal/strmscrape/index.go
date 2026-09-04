@@ -261,6 +261,45 @@ ON CONFLICT(id) DO UPDATE SET
 	return err
 }
 
+func (s *Service) indexHasItem(strmTaskID int64, itemID string) bool {
+	itemID = strings.TrimSpace(itemID)
+	if strmTaskID <= 0 || itemID == "" || !s.indexFileExists(strmTaskID) {
+		return false
+	}
+	found := false
+	_ = s.withTaskIndexLock(strmTaskID, func() error {
+		db, err := openTaskIndexDB(s.indexPath(strmTaskID))
+		if err != nil {
+			return err
+		}
+		defer db.Close()
+		var id string
+		err = db.QueryRow(`SELECT id FROM items WHERE id = ?`, itemID).Scan(&id)
+		found = err == nil && id != ""
+		return nil
+	})
+	return found
+}
+
+func (s *Service) deleteIndexItem(strmTaskID int64, itemID string) error {
+	itemID = strings.TrimSpace(itemID)
+	if strmTaskID <= 0 || itemID == "" {
+		return nil
+	}
+	return s.withTaskIndexLock(strmTaskID, func() error {
+		if !s.indexFileExists(strmTaskID) {
+			return nil
+		}
+		db, err := openTaskIndexDB(s.indexPath(strmTaskID))
+		if err != nil {
+			return err
+		}
+		defer db.Close()
+		_, err = db.Exec(`DELETE FROM items WHERE id = ?`, itemID)
+		return err
+	})
+}
+
 func (s *Service) upsertIndexItem(ctx context.Context, strmTaskID int64, root string, g workGroup) {
 	_ = s.withTaskIndexLock(strmTaskID, func() error {
 		if abs, err := filepath.Abs(root); err == nil {

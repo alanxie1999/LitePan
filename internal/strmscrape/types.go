@@ -137,3 +137,18 @@ type RescrapeRequest struct {
 	StrmTaskID int64  `json:"strm_task_id"`
 	ItemID     string `json:"item_id"`
 }
+
+type DeleteItemRequest struct {
+	StrmTaskID  int64  `json:"strm_task_id"`
+	ItemID      string `json:"item_id"`
+	DeleteCloud bool   `json:"delete_cloud"`
+}
+
+type DeleteItemResult struct {
+	ItemID         string `json:"item_id"`
+	LocalDeleted   bool   `json:"local_deleted"`
+	CloudRequested bool   `json:"cloud_requested"`
+	CloudDeleted   bool   `json:"cloud_deleted"`
+	CloudTarget    string `json:"cloud_target,omitempty"`
+	CloudError     string `json:"cloud_error,omitempty"`
+}

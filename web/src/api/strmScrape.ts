@@ -184,3 +184,20 @@ export function markStrmScrapeNormal(input: {
 export function rescrapeStrmScrapeItem(input: { strm_task_id: number; item_id: string }) {
   return http.post<StrmScrapeRematchResult>("/admin/strm-scrape/rescrape", input);
 }
+
+export interface StrmScrapeDeleteItemResult {
+  item_id: string;
+  local_deleted: boolean;
+  cloud_requested: boolean;
+  cloud_deleted: boolean;
+  cloud_target?: string;
+  cloud_error?: string;
+}
+
+export function deleteStrmScrapeItem(input: {
+  strm_task_id: number;
+  item_id: string;
+  delete_cloud: boolean;
+}) {
+  return http.post<StrmScrapeDeleteItemResult>("/admin/strm-scrape/delete-item", input);
+}
