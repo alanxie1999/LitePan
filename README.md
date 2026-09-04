@@ -84,7 +84,7 @@
 ```yaml
 services:
   litepan:
-    image: ponphil/litepan:beta
+    image: ajun59420/litepan:beta
     container_name: litepan
     restart: unless-stopped
     ports:
