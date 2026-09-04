@@ -12,7 +12,7 @@
 &nbsp;
 <a href="https://space.bilibili.com/1501989416"><img src="https://img.shields.io/badge/Bilibili-交流与演示-00A1D6?style=for-the-badge&logo=bilibili&logoColor=white&labelColor=1B1B2F" alt="Bilibili"></a>
 &nbsp;
-<a href="https://hub.docker.com/r/ponphil/litepan"><img src="https://img.shields.io/badge/Docker-ponphil%2Flitepan-2496ED?style=for-the-badge&logo=docker&logoColor=white&labelColor=1B1B2F" alt="Docker"></a>
+<a href="https://hub.docker.com/r/ajun59420/litepan"><img src="https://img.shields.io/badge/Docker-ajun59420%2Flitepan-2496ED?style=for-the-badge&logo=docker&logoColor=white&labelColor=1B1B2F" alt="Docker"></a>
 
 
 [![docker-pulls][docker-pulls-shield]][docker-url]
@@ -190,8 +190,8 @@ make docker-up
 [PolyForm Noncommercial 1.0.0](./LICENSE) — 个人学习与非商业使用，**禁止商用**。  
 第三方依赖见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)。请遵守各网盘服务条款与当地法规。
 
-[docker-pulls-shield]: https://img.shields.io/docker/pulls/ponphil/litepan?logo=docker&logoColor=white&style=flat-square
+[docker-pulls-shield]: https://img.shields.io/docker/pulls/ajun59420/litepan?logo=docker&logoColor=white&style=flat-square
 [version-shield]: https://img.shields.io/badge/Version-v0.5.3--Beta-6C63FF?style=flat-square
 [license-shield]: https://img.shields.io/badge/License-PolyForm%20NC-red?style=flat-square
-[docker-url]: https://hub.docker.com/r/ponphil/litepan
+[docker-url]: https://hub.docker.com/r/ajun59420/litepan
 [license-url]: ./LICENSE
