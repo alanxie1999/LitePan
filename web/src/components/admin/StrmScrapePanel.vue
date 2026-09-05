@@ -1228,7 +1228,7 @@ defineExpose({
                 <div class="scrape-card__sub">
                   <span>{{ item.media_type === "tv" ? "剧集" : "电影" }}</span>
                   <span v-if="item.year && item.tv_state !== 'updating'">· {{ item.year }}</span>
-                  <span v-if="itemRatingText(item)" class="scrape-card__rating">· {{ itemRatingText(item) }}</span>
+                  <span v-if="itemRatingText(item)">· </span><span v-if="itemRatingText(item)" class="scrape-card__rating">{{ itemRatingText(item) }}</span>
                   <span
                     v-if="episodeProgressText(item)"
                     :class="{ 'scrape-card__ep-gap': item.tv_state === 'updating' }"
