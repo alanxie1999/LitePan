@@ -7,6 +7,7 @@
 感谢原作者的付出
 
 </br>
+ <img src="docs/pictures/1.png" alt="新增功能" height="430">
 <a name="readme-top"></a>
 
 <div align="center">
