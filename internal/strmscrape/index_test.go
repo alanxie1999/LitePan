@@ -6,6 +6,61 @@ import (
 	"testing"
 )
 
+func TestListIndexItemsRatingSort(t *testing.T) {
+	dir := t.TempDir()
+	svc := &Service{dataDir: dir}
+	db, err := openTaskIndexDB(svc.indexPath(11))
+	if err != nil {
+		t.Fatal(err)
+	}
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatal(err)
+	}
+	items := []Item{
+		{ID: "r-91", Title: "Alpha", Rating: floatPtr(9.1), MediaType: MediaTypeMovie, Status: ItemStatusOK, FolderName: "Alpha", AddedAt: "2026-01-01T00:00:00Z"},
+		{ID: "r-nil", Title: "Bravo", MediaType: MediaTypeMovie, Status: ItemStatusOK, FolderName: "Bravo", AddedAt: "2026-01-02T00:00:00Z"},
+		{ID: "r-65", Title: "Charlie", Rating: floatPtr(6.5), MediaType: MediaTypeMovie, Status: ItemStatusOK, FolderName: "Charlie", AddedAt: "2026-01-03T00:00:00Z"},
+		{ID: "r-88", Title: "Delta", Rating: floatPtr(8.8), MediaType: MediaTypeMovie, Status: ItemStatusOK, FolderName: "Delta", AddedAt: "2026-01-04T00:00:00Z"},
+	}
+	for _, item := range items {
+		if err := upsertItemTx(tx, item, ""); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := writeIndexMeta(tx, "schema", indexSchemaVersion); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeIndexMeta(tx, "root", "/tmp/out"); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Commit(); err != nil {
+		t.Fatal(err)
+	}
+	_ = db.Close()
+
+	result, err := svc.listIndexItems(11, ItemListQuery{
+		Limit: defaultItemListLimit,
+		Sort:  ItemListSortRatingDesc,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantOrder := []string{"Alpha", "Delta", "Charlie", "Bravo"}
+	if len(result.Items) != len(wantOrder) {
+		t.Fatalf("len=%d want %d", len(result.Items), len(wantOrder))
+	}
+	for i, want := range wantOrder {
+		if got := result.Items[i].Title; got != want {
+			t.Fatalf("pos %d title=%s want %s", i, got, want)
+		}
+	}
+}
+
+func floatPtr(v float64) *float64 {
+	return &v
+}
+
 func TestTaskIndexPathAndRemove(t *testing.T) {
 	dir := t.TempDir()
 	path := TaskIndexPath(dir, 42)

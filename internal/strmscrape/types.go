@@ -40,11 +40,12 @@ type Item struct {
 type ItemListSort string
 
 const (
-	ItemListSortTitleAsc  ItemListSort = "title_asc"
-	ItemListSortYearDesc  ItemListSort = "year_desc"
-	ItemListSortYearAsc   ItemListSort = "year_asc"
-	ItemListSortAddedAsc  ItemListSort = "added_asc"
-	ItemListSortAddedDesc ItemListSort = "added_desc"
+	ItemListSortTitleAsc   ItemListSort = "title_asc"
+	ItemListSortYearDesc   ItemListSort = "year_desc"
+	ItemListSortYearAsc    ItemListSort = "year_asc"
+	ItemListSortAddedAsc   ItemListSort = "added_asc"
+	ItemListSortAddedDesc  ItemListSort = "added_desc"
+	ItemListSortRatingDesc ItemListSort = "rating_desc"
 )
 
 type ItemListQuery struct {

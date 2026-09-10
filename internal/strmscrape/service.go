@@ -100,7 +100,7 @@ func normalizeItemListQuery(in ItemListQuery) ItemListQuery {
 	out.MediaType = strings.TrimSpace(out.MediaType)
 	out.TVState = strings.TrimSpace(out.TVState)
 	switch out.Sort {
-	case ItemListSortTitleAsc, ItemListSortYearDesc, ItemListSortYearAsc, ItemListSortAddedAsc, ItemListSortAddedDesc:
+	case ItemListSortTitleAsc, ItemListSortYearDesc, ItemListSortYearAsc, ItemListSortAddedAsc, ItemListSortAddedDesc, ItemListSortRatingDesc:
 	default:
 		out.Sort = ItemListSortAddedDesc
 	}

@@ -58,7 +58,7 @@ type TVSubFilter = "all" | "ended" | "updating";
 type SortKey = StrmScrapeItemListSort;
 
 const SORT_STORAGE_KEY = "litepan:strm-scrape:sort";
-const SORT_KEYS: SortKey[] = ["title_asc", "year_desc", "year_asc", "added_desc", "added_asc"];
+const SORT_KEYS: SortKey[] = ["rating_desc", "added_desc", "added_asc", "year_desc", "year_asc", "title_asc"];
 const PAGE_LIMIT = 120;
 const MAX_RELOAD_LIMIT = 200;
 
@@ -158,6 +158,7 @@ async function saveScope(dirs: string[]) {
 }
 
 const sortOptions: { value: SortKey; label: string }[] = [
+  { value: "rating_desc", label: "评分 · 高→低" },
   { value: "added_desc", label: "添加时间 · 新→旧" },
   { value: "added_asc", label: "添加时间 · 旧→新" },
   { value: "year_desc", label: "上映年份 · 新→旧" },
@@ -1013,6 +1014,16 @@ defineExpose({
             {{ f.label }}
           </button>
           <span class="scrape-toolbar__sep" />
+          <button
+            type="button"
+            class="scrape-filter"
+            :class="{ 'scrape-filter--active': sortKey === 'rating_desc' }"
+            :aria-pressed="sortKey === 'rating_desc'"
+            title="按评分高低排列影片"
+            @click="applySort('rating_desc')"
+          >
+            按评分高低
+          </button>
           <button
             type="button"
             class="scrape-filter"
