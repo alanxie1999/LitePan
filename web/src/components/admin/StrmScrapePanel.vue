@@ -58,7 +58,7 @@ type TVSubFilter = "all" | "ended" | "updating";
 type SortKey = StrmScrapeItemListSort;
 
 const SORT_STORAGE_KEY = "litepan:strm-scrape:sort";
-const SORT_KEYS: SortKey[] = ["rating_desc", "added_desc", "added_asc", "year_desc", "year_asc", "title_asc"];
+const SORT_KEYS: SortKey[] = ["added_desc", "added_asc", "year_desc", "year_asc", "title_asc", "rating_desc"];
 const PAGE_LIMIT = 120;
 const MAX_RELOAD_LIMIT = 200;
 
@@ -158,12 +158,12 @@ async function saveScope(dirs: string[]) {
 }
 
 const sortOptions: { value: SortKey; label: string }[] = [
-  { value: "rating_desc", label: "评分 · 高→低" },
   { value: "added_desc", label: "添加时间 · 新→旧" },
   { value: "added_asc", label: "添加时间 · 旧→新" },
   { value: "year_desc", label: "上映年份 · 新→旧" },
   { value: "year_asc", label: "上映年份 · 旧→新" },
   { value: "title_asc", label: "标题 A→Z" },
+  { value: "rating_desc", label: "评分 · 高→低" },
 ];
 
 const matchTypeOptions = [
