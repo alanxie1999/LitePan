@@ -380,6 +380,8 @@ func itemListOrderBy(sort ItemListSort) string {
 		return "ORDER BY added_at ASC, title COLLATE NOCASE ASC"
 	case ItemListSortRatingDesc:
 		return "ORDER BY CASE WHEN rating IS NULL THEN 1 ELSE 0 END ASC, rating DESC, title COLLATE NOCASE ASC"
+	case ItemListSortRatingAsc:
+		return "ORDER BY CASE WHEN rating IS NULL THEN 1 ELSE 0 END ASC, rating ASC, title COLLATE NOCASE ASC"
 	default:
 		return "ORDER BY added_at DESC, title COLLATE NOCASE ASC"
 	}

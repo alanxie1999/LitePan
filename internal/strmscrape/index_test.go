@@ -55,6 +55,23 @@ func TestListIndexItemsRatingSort(t *testing.T) {
 			t.Fatalf("pos %d title=%s want %s", i, got, want)
 		}
 	}
+
+	result, err = svc.listIndexItems(11, ItemListQuery{
+		Limit: defaultItemListLimit,
+		Sort:  ItemListSortRatingAsc,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantOrder = []string{"Charlie", "Delta", "Alpha", "Bravo"}
+	if len(result.Items) != len(wantOrder) {
+		t.Fatalf("asc len=%d want %d", len(result.Items), len(wantOrder))
+	}
+	for i, want := range wantOrder {
+		if got := result.Items[i].Title; got != want {
+			t.Fatalf("asc pos %d title=%s want %s", i, got, want)
+		}
+	}
 }
 
 func floatPtr(v float64) *float64 {

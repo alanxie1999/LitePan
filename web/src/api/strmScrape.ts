@@ -10,7 +10,8 @@ export type StrmScrapeItemListSort =
   | "year_asc"
   | "added_desc"
   | "added_asc"
-  | "rating_desc";
+  | "rating_desc"
+  | "rating_asc";
 
 export interface StrmScrapeItem {
   id: string;

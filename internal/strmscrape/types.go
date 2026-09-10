@@ -46,6 +46,7 @@ const (
 	ItemListSortAddedAsc   ItemListSort = "added_asc"
 	ItemListSortAddedDesc  ItemListSort = "added_desc"
 	ItemListSortRatingDesc ItemListSort = "rating_desc"
+	ItemListSortRatingAsc  ItemListSort = "rating_asc"
 )
 
 type ItemListQuery struct {
