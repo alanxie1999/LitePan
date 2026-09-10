@@ -1017,16 +1017,6 @@ defineExpose({
           <button
             type="button"
             class="scrape-filter"
-            :class="{ 'scrape-filter--active': sortKey === 'rating_desc' }"
-            :aria-pressed="sortKey === 'rating_desc'"
-            title="按评分高低排列影片"
-            @click="applySort('rating_desc')"
-          >
-            按评分高低
-          </button>
-          <button
-            type="button"
-            class="scrape-filter"
             :class="{ 'scrape-filter--active': typeFilter === 'all' }"
             @click="setTypeFilter('all')"
           >
