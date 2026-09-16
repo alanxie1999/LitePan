@@ -407,6 +407,7 @@ func NewRouter(d Deps) http.Handler {
 					r.Post("/rematch", h.rematchStrmScrapeItem)
 					r.Post("/rescrape", h.rescrapeStrmScrapeItem)
 					r.Post("/mark-normal", h.markStrmScrapeNormal)
+					r.Post("/delete-item", h.deleteStrmScrapeItem)
 					r.Get("/poster", h.getStrmScrapePoster)
 				})
 				r.Route("/automation", func(r chi.Router) {

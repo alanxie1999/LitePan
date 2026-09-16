@@ -235,6 +235,23 @@ func (h *Handler) rescrapeStrmScrapeItem(w http.ResponseWriter, r *http.Request)
 	})
 }
 
+func (h *Handler) deleteStrmScrapeItem(w http.ResponseWriter, r *http.Request) {
+	if !ensureServiceReady(w, h.strmScrape != nil) {
+		return
+	}
+	var req strmscrape.DeleteItemRequest
+	if err := decodeJSON(r, &req); err != nil {
+		writeErr(w, err)
+		return
+	}
+	result, err := h.strmScrape.DeleteItem(r.Context(), req)
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	writeOK(w, result)
+}
+
 func (h *Handler) getStrmScrapePoster(w http.ResponseWriter, r *http.Request) {
 	if !ensureServiceReady(w, h.strmScrape != nil) {
 		return

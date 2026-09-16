@@ -17,9 +17,10 @@ type Item struct {
 	ID         string `json:"id"`
 	RelDir     string `json:"rel_dir"`
 	StrmName   string `json:"strm_name,omitempty"`
-	Title      string `json:"title"`
-	Year       *int   `json:"year,omitempty"`
-	MediaType  string `json:"media_type"`
+	Title      string   `json:"title"`
+	Year       *int     `json:"year,omitempty"`
+	Rating     *float64 `json:"rating,omitempty"`
+	MediaType  string   `json:"media_type"`
 	Status     string `json:"status"`
 	HasNFO     bool   `json:"has_nfo"`
 	HasPoster  bool   `json:"has_poster"`
@@ -39,11 +40,13 @@ type Item struct {
 type ItemListSort string
 
 const (
-	ItemListSortTitleAsc  ItemListSort = "title_asc"
-	ItemListSortYearDesc  ItemListSort = "year_desc"
-	ItemListSortYearAsc   ItemListSort = "year_asc"
-	ItemListSortAddedAsc  ItemListSort = "added_asc"
-	ItemListSortAddedDesc ItemListSort = "added_desc"
+	ItemListSortTitleAsc   ItemListSort = "title_asc"
+	ItemListSortYearDesc   ItemListSort = "year_desc"
+	ItemListSortYearAsc    ItemListSort = "year_asc"
+	ItemListSortAddedAsc   ItemListSort = "added_asc"
+	ItemListSortAddedDesc  ItemListSort = "added_desc"
+	ItemListSortRatingDesc ItemListSort = "rating_desc"
+	ItemListSortRatingAsc  ItemListSort = "rating_asc"
 )
 
 type ItemListQuery struct {
@@ -136,4 +139,19 @@ type MarkNormalRequest struct {
 type RescrapeRequest struct {
 	StrmTaskID int64  `json:"strm_task_id"`
 	ItemID     string `json:"item_id"`
+}
+
+type DeleteItemRequest struct {
+	StrmTaskID  int64  `json:"strm_task_id"`
+	ItemID      string `json:"item_id"`
+	DeleteCloud bool   `json:"delete_cloud"`
+}
+
+type DeleteItemResult struct {
+	ItemID         string `json:"item_id"`
+	LocalDeleted   bool   `json:"local_deleted"`
+	CloudRequested bool   `json:"cloud_requested"`
+	CloudDeleted   bool   `json:"cloud_deleted"`
+	CloudTarget    string `json:"cloud_target,omitempty"`
+	CloudError     string `json:"cloud_error,omitempty"`
 }

@@ -14,6 +14,7 @@ import {
   rematchStrmScrapeItem,
   rescrapeStrmScrapeItem,
   markStrmScrapeNormal,
+  deleteStrmScrapeItem,
   runStrmScrape,
   saveStrmScrapeScope,
   stopStrmScrape,
@@ -36,7 +37,7 @@ import AppSelect from "@/components/base/AppSelect.vue";
 import BusySpinner from "@/components/base/BusySpinner.vue";
 import { useAdminPageLoading } from "@/composables/useAdminLoadingBar";
 import { useConditionalPolling } from "@/composables/useConditionalPolling";
-import { confirm } from "@/composables/useConfirm";
+import { confirm, showConfirm } from "@/composables/useConfirm";
 import { useVirtualPosterWall } from "@/composables/useVirtualPosterWall";
 import { toast } from "@/composables/useToast";
 import {
@@ -57,7 +58,7 @@ type TVSubFilter = "all" | "ended" | "updating";
 type SortKey = StrmScrapeItemListSort;
 
 const SORT_STORAGE_KEY = "litepan:strm-scrape:sort";
-const SORT_KEYS: SortKey[] = ["title_asc", "year_desc", "year_asc", "added_desc", "added_asc"];
+const SORT_KEYS: SortKey[] = ["added_desc", "added_asc", "year_desc", "year_asc", "title_asc", "rating_desc", "rating_asc"];
 const PAGE_LIMIT = 120;
 const MAX_RELOAD_LIMIT = 200;
 
@@ -162,6 +163,8 @@ const sortOptions: { value: SortKey; label: string }[] = [
   { value: "year_desc", label: "上映年份 · 新→旧" },
   { value: "year_asc", label: "上映年份 · 旧→新" },
   { value: "title_asc", label: "标题 A→Z" },
+  { value: "rating_desc", label: "评分 · 高→低" },
+  { value: "rating_asc", label: "评分 · 低→高" },
 ];
 
 const matchTypeOptions = [
@@ -225,6 +228,7 @@ const taskCount = computed(() => tasks.value.length);
 const running = computed(() => Boolean(progress.value?.running));
 const markingNormalId = ref("");
 const rescrapingId = ref("");
+const deletingId = ref("");
 
 const {
   rootEl: wallRootEl,
@@ -284,6 +288,21 @@ function replaceItem(updated: StrmScrapeItem) {
   const next = items.value.slice();
   next[idx] = updated;
   items.value = next;
+  void nextTick(() => measureWall());
+  return true;
+}
+
+function removeItem(itemId: string) {
+  const idx = items.value.findIndex((item) => item.id === itemId);
+  if (idx < 0) return false;
+  const removed = items.value[idx];
+  items.value = items.value.filter((item) => item.id !== itemId);
+  totalMatched.value = Math.max(0, totalMatched.value - 1);
+  const next = { ...stats.value, total: Math.max(0, stats.value.total - 1) };
+  if (removed.status === "ok") next.ok = Math.max(0, next.ok - 1);
+  else if (removed.status === "miss") next.miss = Math.max(0, next.miss - 1);
+  else if (removed.status === "doubt") next.doubt = Math.max(0, next.doubt - 1);
+  stats.value = next;
   void nextTick(() => measureWall());
   return true;
 }
@@ -461,6 +480,12 @@ function statusTitle(status: StrmScrapeItemStatus) {
   return "根目录 nfo / 海报已齐备";
 }
 
+function itemRatingText(item: StrmScrapeItem) {
+  const n = Number(item.rating);
+  if (!Number.isFinite(n) || n <= 0) return "";
+  return n.toFixed(1);
+}
+
 function episodeProgressText(item: StrmScrapeItem) {
   if (item.media_type !== "tv") {
     return item.file_count > 1 ? `${item.file_count} 个文件` : "";
@@ -503,6 +528,7 @@ function canRescrape(item: StrmScrapeItem) {
 
 function isItemBusy(item: StrmScrapeItem) {
   if (rescrapingId.value && rescrapingId.value === item.id) return true;
+  if (deletingId.value && deletingId.value === item.id) return true;
   if (!running.value) return false;
   if (Number(progress.value?.strm_task_id) !== Number(selectedTaskId.value)) return false;
   return String(progress.value?.current_item_id || "") === item.id;
@@ -709,6 +735,47 @@ async function applyNormalState(item: StrmScrapeItem) {
   });
   if (!replaceItem(updated)) {
     await loadItems({ silent: true, preserveLoaded: true });
+  }
+}
+
+async function deleteItem(item: StrmScrapeItem) {
+  if (!selectedTaskId.value || running.value || deletingId.value) return;
+  const title = (item.title || item.folder_name || "该作品").trim();
+  const kind = item.media_type === "tv" ? "剧集" : "电影";
+  let deleteCloud = true;
+  try {
+    const result = await showConfirm({
+      title: "删除作品",
+      message: `确定删除${kind}「${title}」的本地 STRM 目录吗？`,
+      icon: "trash",
+      confirmText: "删除",
+      danger: true,
+      checkboxLabel: "同时删除网盘内容",
+      checkboxDefault: true,
+      hint: "默认会删除网盘中对应的作品目录或源文件；取消勾选则只清本地 STRM 和海报墙条目。",
+    });
+    if (result.action !== "confirm") return;
+    deleteCloud = result.checked;
+  } catch {
+    return;
+  }
+  deletingId.value = item.id;
+  try {
+    const result = await deleteStrmScrapeItem({
+      strm_task_id: selectedTaskId.value,
+      item_id: item.id,
+      delete_cloud: deleteCloud,
+    });
+    removeItem(item.id);
+    if (result.cloud_requested && result.cloud_error) {
+      toast.warning(`本地已删除，网盘未全部完成：${result.cloud_error}`);
+    } else {
+      toast.success(deleteCloud ? "作品已删除" : "本地 STRM 已删除");
+    }
+  } catch (e) {
+    toast.error(getApiErrorMessage(e, "删除作品失败"));
+  } finally {
+    deletingId.value = "";
   }
 }
 
@@ -1096,9 +1163,9 @@ defineExpose({
                   追更
                 </span>
 
-                <div v-if="isItemBusy(item)" class="scrape-card__busy" title="正在刮削">
+                <div v-if="isItemBusy(item)" class="scrape-card__busy" :title="deletingId === item.id ? '正在删除' : '正在刮削'">
                   <BusySpinner :size="22" color="#fff" />
-                  <span>刮削中</span>
+                  <span>{{ deletingId === item.id ? "删除中" : "刮削中" }}</span>
                 </div>
 
                 <div class="scrape-card__shade" aria-hidden="true"></div>
@@ -1107,7 +1174,7 @@ defineExpose({
                     v-if="canConfirmDoubt(item)"
                     type="button"
                     class="scrape-card__act scrape-card__act--ghost"
-                    :disabled="running || markingNormalId === item.id || Boolean(rescrapingId)"
+                    :disabled="running || markingNormalId === item.id || Boolean(rescrapingId) || Boolean(deletingId)"
                     :title="markingNormalId === item.id ? '处理中…' : '确认当前匹配'"
                     @click="confirmDoubt(item)"
                   >
@@ -1118,7 +1185,7 @@ defineExpose({
                     v-else-if="canMarkEnded(item)"
                     type="button"
                     class="scrape-card__act scrape-card__act--ghost"
-                    :disabled="running || markingNormalId === item.id || Boolean(rescrapingId)"
+                    :disabled="running || markingNormalId === item.id || Boolean(rescrapingId) || Boolean(deletingId)"
                     :title="markingNormalId === item.id ? '处理中…' : markActionLabel(item) === '完成' ? '标记完成' : '设为完结'"
                     @click="markEnded(item)"
                   >
@@ -1129,7 +1196,7 @@ defineExpose({
                     v-else-if="canRescrape(item)"
                     type="button"
                     class="scrape-card__act scrape-card__act--ghost"
-                    :disabled="running || rescrapingId === item.id || Boolean(markingNormalId)"
+                    :disabled="running || rescrapingId === item.id || Boolean(markingNormalId) || Boolean(deletingId)"
                     :title="rescrapingId === item.id ? '处理中…' : '重新刮削'"
                     @click="rescrapeItem(item)"
                   >
@@ -1139,12 +1206,22 @@ defineExpose({
                   <button
                     type="button"
                     class="scrape-card__act"
-                    :disabled="running || Boolean(markingNormalId) || Boolean(rescrapingId)"
+                    :disabled="running || Boolean(markingNormalId) || Boolean(rescrapingId) || Boolean(deletingId)"
                     title="重新匹配"
                     @click="openRematch(item)"
                   >
                     <i class="fas fa-magnifying-glass"></i>
                     <span>匹配</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="scrape-card__act scrape-card__act--danger"
+                    :disabled="running || Boolean(markingNormalId) || Boolean(rescrapingId) || Boolean(deletingId)"
+                    :title="deletingId === item.id ? '删除中…' : '删除作品'"
+                    @click="deleteItem(item)"
+                  >
+                    <i class="fas fa-trash"></i>
+                    <span>{{ deletingId === item.id ? "…" : "删除" }}</span>
                   </button>
                 </div>
               </div>
@@ -1153,6 +1230,7 @@ defineExpose({
                 <div class="scrape-card__sub">
                   <span>{{ item.media_type === "tv" ? "剧集" : "电影" }}</span>
                   <span v-if="item.year && item.tv_state !== 'updating'">· {{ item.year }}</span>
+                  <span v-if="itemRatingText(item)">· </span><span v-if="itemRatingText(item)" class="scrape-card__rating">{{ itemRatingText(item) }}</span>
                   <span
                     v-if="episodeProgressText(item)"
                     :class="{ 'scrape-card__ep-gap': item.tv_state === 'updating' }"
@@ -1879,6 +1957,13 @@ defineExpose({
 .scrape-card__act--ghost:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.24);
 }
+.scrape-card__act--danger {
+  color: #fff;
+  background: rgba(185, 28, 28, 0.92);
+}
+.scrape-card__act--danger:hover:not(:disabled) {
+  background: #b91c1c;
+}
 .scrape-card__actions .scrape-card__act:only-child {
   grid-column: 1 / -1;
 }
@@ -1901,6 +1986,10 @@ defineExpose({
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.scrape-card__rating {
+  color: #ef4444;
+  font-weight: 700;
 }
 .scrape-card__ep-gap {
   color: var(--warning);

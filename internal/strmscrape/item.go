@@ -47,6 +47,7 @@ func buildItem(taskID int64, root string, g workGroup) Item {
 		title = folderName
 	}
 	year := parsed.Year
+	var rating *float64
 	tmdbID := rules.FindTMDBIDInName(folderName)
 	if tmdbID == "" && len(g.entries) > 0 {
 		stem := strings.TrimSuffix(filepath.Base(g.entries[0].absPath), filepath.Ext(g.entries[0].absPath))
@@ -61,6 +62,9 @@ func buildItem(taskID int64, root string, g workGroup) Item {
 		}
 		if nfoMeta.Year != nil {
 			year = nfoMeta.Year
+		}
+		if nfoMeta.Rating != nil {
+			rating = nfoMeta.Rating
 		}
 	}
 	if manualComplete {
@@ -103,6 +107,7 @@ func buildItem(taskID int64, root string, g workGroup) Item {
 		RelDir:     relDir,
 		Title:      title,
 		Year:       year,
+		Rating:     rating,
 		MediaType:  mediaType,
 		Status:     status,
 		HasNFO:     hasNFO,
@@ -135,6 +140,7 @@ type workNFOMeta struct {
 	Title  string
 	TMDBID string
 	Year   *int
+	Rating *float64
 }
 
 func resolveWorkMediaType(g workGroup) string {
@@ -252,7 +258,8 @@ func readWorkNFOMeta(g workGroup, mediaType string) (workNFOMeta, bool) {
 			if y, err := strconv.Atoi(strings.TrimSpace(nfo.Year)); err == nil && y > 0 {
 				meta.Year = &y
 			}
-			return meta, meta.Title != "" || meta.TMDBID != ""
+			meta.Rating = parseNFORating(nfo.Rating)
+			return meta, meta.Title != "" || meta.TMDBID != "" || meta.Rating != nil
 		}
 		var nfo movieNFO
 		if xml.Unmarshal(data, &nfo) != nil {
@@ -262,9 +269,18 @@ func readWorkNFOMeta(g workGroup, mediaType string) (workNFOMeta, bool) {
 		if y, err := strconv.Atoi(strings.TrimSpace(nfo.Year)); err == nil && y > 0 {
 			meta.Year = &y
 		}
-		return meta, meta.Title != "" || meta.TMDBID != ""
+		meta.Rating = parseNFORating(nfo.Rating)
+		return meta, meta.Title != "" || meta.TMDBID != "" || meta.Rating != nil
 	}
 	return workNFOMeta{}, false
+}
+
+func parseNFORating(raw string) *float64 {
+	v, err := strconv.ParseFloat(strings.TrimSpace(raw), 64)
+	if err != nil || v <= 0 {
+		return nil
+	}
+	return &v
 }
 
 func workAddedAt(g workGroup) string {

@@ -1,3 +1,14 @@
+<br>
+
+> 此项目为个人魔改增加四个功能。
+1：刮削带评分一起写入NFO
+2：海报墙显示评分
+3：海报墙删除联动源文件
+4：增加评分排序
+《感谢原作者的付出》
+
+</br>
+ <img src="docs/pictures/1.png" alt="新增功能" height="430">
 <a name="readme-top"></a>
 
 <div align="center">
@@ -10,7 +21,7 @@
 &nbsp;
 <a href="https://space.bilibili.com/1501989416"><img src="https://img.shields.io/badge/Bilibili-交流与演示-00A1D6?style=for-the-badge&logo=bilibili&logoColor=white&labelColor=1B1B2F" alt="Bilibili"></a>
 &nbsp;
-<a href="https://hub.docker.com/r/ponphil/litepan"><img src="https://img.shields.io/badge/Docker-ponphil%2Flitepan-2496ED?style=for-the-badge&logo=docker&logoColor=white&labelColor=1B1B2F" alt="Docker"></a>
+<a href="https://hub.docker.com/r/ajun59420/litepan"><img src="https://img.shields.io/badge/Docker-ajun59420%2Flitepan-2496ED?style=for-the-badge&logo=docker&logoColor=white&labelColor=1B1B2F" alt="Docker"></a>
 
 
 [![docker-pulls][docker-pulls-shield]][docker-url]
@@ -77,12 +88,12 @@
 
 ## ▎ 快速开始
 
-**Docker Compose 部署** · 镜像标签：`Beta`或指定`v0.5.3-Beta`
+**Docker Compose 部署** · 镜像标签：`v1.1`
 
 ```yaml
 services:
   litepan:
-    image: ponphil/litepan:beta
+    image: ajun59420/litepan:v1.1
     container_name: litepan
     restart: unless-stopped
     ports:
@@ -112,6 +123,44 @@ services:
 
 打开 `http://你的IP:5211`，默认管理员密码均为admin。  
 需要 FUSE 时请确保宿主机具备 `/dev/fuse` 权限。
+
+**飞牛 NAS** · 使用仓库内 `docker-compose.fnos.yml`，按本机路径改 `volumes` 后启动：
+
+```bash
+docker compose -f docker-compose.fnos.yml up -d
+```
+
+**从源码编译** · 需要 Node.js 20+、Go 1.26.4
+
+```bash
+# 构建前端静态资源（输出到 internal/api/web）
+cd web
+npm ci
+npm run build
+
+# 编译后端（含 FUSE 挂载）
+cd ..
+go build -tags fuse -trimpath -ldflags="-s -w" -o litepan ./cmd/litepan
+
+# 启动，默认监听 :5211，数据目录 ./data，STRM 目录 ./strm
+./litepan
+```
+
+无 FUSE 需求时改用 `go build -trimpath -ldflags="-s -w" -o litepan ./cmd/litepan`。  
+可用 `-listen`、`-data-dir`、`-strm-dir` 覆盖监听地址和目录，也可用环境变量 `LITEPAN_LISTEN`、`LITEPAN_DATA_DIR`、`LITEPAN_STRM_DIR`、`LITEPAN_LOG_LEVEL`。
+
+**本地构建镜像**
+
+```bash
+docker compose up -d --build
+```
+
+或：
+
+```bash
+make docker-build
+make docker-up
+```
 
 > [!WARNING]
 > **不要用 `ponphil/litepan:latest` 部署本仓库对应的 Go 版。**  
@@ -150,8 +199,8 @@ services:
 [PolyForm Noncommercial 1.0.0](./LICENSE) — 个人学习与非商业使用，**禁止商用**。  
 第三方依赖见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)。请遵守各网盘服务条款与当地法规。
 
-[docker-pulls-shield]: https://img.shields.io/docker/pulls/ponphil/litepan?logo=docker&logoColor=white&style=flat-square
-[version-shield]: https://img.shields.io/badge/Version-v0.5.3--Beta-6C63FF?style=flat-square
+[docker-pulls-shield]: https://img.shields.io/docker/pulls/ajun59420/litepan?logo=docker&logoColor=white&style=flat-square
+[version-shield]: https://img.shields.io/badge/Version-v0.5.4--Beta-6C63FF?style=flat-square
 [license-shield]: https://img.shields.io/badge/License-PolyForm%20NC-red?style=flat-square
-[docker-url]: https://hub.docker.com/r/ponphil/litepan
+[docker-url]: https://hub.docker.com/r/ajun59420/litepan
 [license-url]: ./LICENSE

@@ -131,7 +131,8 @@ func clearScrapedMetadata(g workGroup) error {
 
 // clearFlatScrapedMetadata 清理扁平单文件作品的元数据（stem.nfo 与 stem-*.图片）。
 func clearFlatScrapedMetadata(g workGroup) error {
-	stem := strings.TrimSuffix(g.flatFile, filepath.Ext(g.flatFile))
+	base := filepath.Base(g.flatFile)
+	stem := strings.TrimSuffix(base, filepath.Ext(base))
 	if stem == "" {
 		return nil
 	}

@@ -259,6 +259,37 @@ func TestWriteMatchedPropagatesTVExtrasError(t *testing.T) {
 	}
 }
 
+func TestBuildItemReadsNFORating(t *testing.T) {
+	root := t.TempDir()
+	movie := filepath.Join(root, "蜘蛛侠：崭新之日 (2026)")
+	mustMkdir(t, movie)
+	mustWrite(t, filepath.Join(movie, "spiderman.strm"), "x")
+	mustWrite(t, filepath.Join(movie, "spiderman.nfo"), "<movie><title>蜘蛛侠：崭新之日</title><year>2026</year><rating>7.4</rating></movie>\n")
+	works, err := scanWorks(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	item := buildItem(1, root, works[0])
+	if item.Rating == nil || *item.Rating != 7.4 {
+		t.Fatalf("movie rating=%v want 7.4", item.Rating)
+	}
+
+	tvRoot := t.TempDir()
+	show := filepath.Join(tvRoot, "三体 (2023)")
+	s1 := filepath.Join(show, "Season 01")
+	mustMkdir(t, s1)
+	mustWrite(t, filepath.Join(s1, "E01.strm"), "x")
+	mustWrite(t, filepath.Join(show, "tvshow.nfo"), "<tvshow><title>三体</title><year>2023</year><rating>8.6</rating></tvshow>\n")
+	tvWorks, err := scanWorks(tvRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tvItem := buildItem(1, tvRoot, tvWorks[0])
+	if tvItem.Rating == nil || *tvItem.Rating != 8.6 {
+		t.Fatalf("tv rating=%v want 8.6", tvItem.Rating)
+	}
+}
+
 func TestStatusMissWhenOnlyNFO(t *testing.T) {
 	root := t.TempDir()
 	show := filepath.Join(root, "现在就出发 (2023)")
