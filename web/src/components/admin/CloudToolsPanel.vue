@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { containsQuery } from "@/utils/format";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { getApiErrorMessage } from "@/api/client";
 import {
@@ -13,10 +14,11 @@ import AIToolCard from "@/components/admin/AIToolCard.vue";
 import ClassificationToolCard from "@/components/admin/ClassificationToolCard.vue";
 import CleanupToolCard from "@/components/admin/CleanupToolCard.vue";
 import CoverExtractToolCard from "@/components/admin/CoverExtractToolCard.vue";
-import CloudToolCard from "@/components/admin/CloudToolCard.vue";
+import ToolCard from "@/components/admin/ToolCard.vue";
 import LocalUploadToolCard from "@/components/admin/LocalUploadToolCard.vue";
 import ProxyToolsPanel from "@/components/admin/ProxyToolsPanel.vue";
 import QuarkTVToolCard from "@/components/admin/QuarkTVToolCard.vue";
+import SvgIcon from "@/components/icons/SvgIcon.vue";
 
 const props = withDefaults(defineProps<{ searchOpen?: boolean }>(), { searchOpen: false });
 const emit = defineEmits<{ "update:searchOpen": [boolean] }>();
@@ -28,8 +30,7 @@ const searchInputRef = ref<HTMLInputElement | null>(null);
 const cardTitles = ["Emby 反代", "飞牛影视反代", "115 STRM 增强", "夸克 STRM 接管", "AI 辅助识别", "目录整理分类", "从服务器上传", "垃圾清理工具", "视频海报生成"];
 
 function matches(title: string) {
-  const q = searchQuery.value.trim().toLowerCase();
-  return !q || title.toLowerCase().includes(q);
+  return containsQuery(title, searchQuery.value);
 }
 
 const hasMatch = computed(() => {
@@ -117,12 +118,12 @@ async function clearCache() {
       <div class="tool-search__mask" @click="closeSearch" />
       <div class="tool-search__box">
         <input ref="searchInputRef" v-model="searchQuery" placeholder="搜索工具，如：飞牛、Emby、反代" @keydown.esc="closeSearch" />
-        <button type="button" @click="closeSearch">×</button>
+        <button type="button" aria-label="关闭搜索" @click="closeSearch"><SvgIcon name="xmark" :size="14" /></button>
       </div>
     </div>
     <div class="cloud-tools__grid">
       <ProxyToolsPanel :search-query="searchQuery" />
-      <CloudToolCard
+      <ToolCard
         v-show="matches('115 STRM 增强')"
         :enabled="status.enabled"
         name="115 STRM 增强"
@@ -161,7 +162,7 @@ async function clearCache() {
             {{ clearing ? "清空中…" : "清空映射" }}
           </AppButton>
         </template>
-      </CloudToolCard>
+      </ToolCard>
 
       <QuarkTVToolCard :search-query="searchQuery" />
 
@@ -235,40 +236,5 @@ async function clearCache() {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
   align-items: start;
   gap: 16px;
-}
-
-.check-toggle {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 0;
-  padding: 0;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  background: var(--border);
-  color: var(--text-muted);
-  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
-}
-.check-toggle svg {
-  width: 14px;
-  height: 14px;
-}
-.check-toggle:hover {
-  background: var(--surface-hover);
-}
-.check-toggle.on {
-  background: var(--success);
-  color: #fff;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.16);
-}
-.check-toggle.on:hover {
-  background: color-mix(in srgb, var(--success) 88%, #000);
-}
-.check-toggle:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 </style>

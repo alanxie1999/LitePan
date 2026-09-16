@@ -189,6 +189,7 @@ func NewRouter(d Deps) http.Handler {
 	r.Use(trackResponseCommit)
 	r.Use(chimw.RequestID)
 	r.Use(h.attachRequestLogger)
+	r.Use(h.logSlowDashboardRequests)
 	r.Use(chimw.Recoverer)
 
 	r.Route("/api", func(r chi.Router) {
@@ -202,6 +203,10 @@ func NewRouter(d Deps) http.Handler {
 		r.Head("/strm/play/{account_id}/{file_key}/t/{token}/n/{filename}", h.strmPlay)
 		r.Get("/strm/play/{account_id}/{file_key}/t/{token}/n/{filename}/s/{signature}", h.strmPlay)
 		r.Head("/strm/play/{account_id}/{file_key}/t/{token}/n/{filename}/s/{signature}", h.strmPlay)
+		r.Get("/strm/path/{account_id}/{root_key}/{path_key}/t/{token}/n/{filename}", h.strmPathPlay)
+		r.Head("/strm/path/{account_id}/{root_key}/{path_key}/t/{token}/n/{filename}", h.strmPathPlay)
+		r.Get("/strm/path/{account_id}/{root_key}/{path_key}/t/{token}/n/{filename}/s/{signature}", h.strmPathPlay)
+		r.Head("/strm/path/{account_id}/{root_key}/{path_key}/t/{token}/n/{filename}/s/{signature}", h.strmPathPlay)
 		r.Route("/public", func(r chi.Router) {
 			r.Use(h.requirePublicOrAdmin)
 			r.Get("/accounts", h.publicAccounts)
@@ -219,6 +224,8 @@ func NewRouter(d Deps) http.Handler {
 				r.Post("/scan/stream", h.crossTransferScanStream)
 				r.Post("/probe", h.crossTransferProbe)
 				r.Post("/execute", h.crossTransferExecute)
+				r.Post("/plain-enqueue", h.crossTransferPlainEnqueue)
+				r.Post("/plain-enqueue/stream", h.crossTransferPlainEnqueueStream)
 			})
 			r.Get("/logs", h.listLogs)
 			r.Get("/logs/stats", h.logStats)
@@ -255,6 +262,7 @@ func NewRouter(d Deps) http.Handler {
 				r.Get("/dev/state", h.getDevState)
 				r.Post("/dev/unlock", h.unlockDevMode)
 				r.Get("/accounts", h.listAccounts)
+				r.Get("/overview", h.dashboardOverview)
 				r.Post("/accounts", h.createAccount)
 				r.Get("/accounts/{id}", h.getAccount)
 				r.Put("/accounts/{id}", h.updateAccount)
@@ -291,6 +299,7 @@ func NewRouter(d Deps) http.Handler {
 				})
 				r.Get("/notifications", h.listNotifications)
 				r.Get("/notifications/unread-count", h.notificationUnreadCount)
+				r.Get("/notifications/stream", h.streamNotificationUnread)
 				r.Post("/notifications/read-all", h.markAllNotificationsRead)
 				r.Delete("/notifications", h.deleteAllNotifications)
 				r.Post("/notifications/{id}/read", h.markNotificationRead)

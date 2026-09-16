@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -31,15 +32,9 @@ type crossTransferScanSource struct {
 	AncestorIDs []string `json:"ancestor_ids"`
 }
 
-func (r crossTransferScanReq) roots() []crosstransfer.ScanRoot {
-	if len(r.Sources) == 0 {
-		return []crosstransfer.ScanRoot{{
-			ParentID:    r.SourceParentID,
-			DisplayPath: r.SourceDisplayPath,
-		}}
-	}
-	roots := make([]crosstransfer.ScanRoot, 0, len(r.Sources))
-	for _, source := range r.Sources {
+func toScanRoots(sources []crossTransferScanSource) []crosstransfer.ScanRoot {
+	roots := make([]crosstransfer.ScanRoot, 0, len(sources))
+	for _, source := range sources {
 		roots = append(roots, crosstransfer.ScanRoot{
 			ParentID:    source.ParentID,
 			DisplayPath: source.DisplayPath,
@@ -47,6 +42,16 @@ func (r crossTransferScanReq) roots() []crosstransfer.ScanRoot {
 		})
 	}
 	return roots
+}
+
+func (r crossTransferScanReq) roots() []crosstransfer.ScanRoot {
+	if len(r.Sources) == 0 {
+		return []crosstransfer.ScanRoot{{
+			ParentID:    r.SourceParentID,
+			DisplayPath: r.SourceDisplayPath,
+		}}
+	}
+	return toScanRoots(r.Sources)
 }
 
 func (h *Handler) crossTransferScan(w http.ResponseWriter, r *http.Request) {
@@ -213,4 +218,69 @@ func (h *Handler) streamCrossTransferNDJSON(w http.ResponseWriter, r *http.Reque
 	if err := fn(writeLine); err != nil {
 		_ = writeLine(crosstransfer.StreamEvent{"event": "error", "message": err.Error()})
 	}
+}
+
+type crossTransferPlainEnqueueReq struct {
+	SourceAccountID   int64                     `json:"source_account_id"`
+	SourceAccountName string                    `json:"source_account_name"`
+	SourceDriverType  string                    `json:"source_driver_type"`
+	TargetAccountID   int64                     `json:"target_account_id"`
+	TargetAccountName string                    `json:"target_account_name"`
+	TargetDriverType  string                    `json:"target_driver_type"`
+	TargetParentID    string                    `json:"target_parent_id"`
+	TargetDisplayPath string                    `json:"target_display_path"`
+	Sources           []crossTransferScanSource `json:"sources"`
+	Conflict          string                    `json:"conflict"`
+}
+
+// crossTransferPlainEnqueue 跨盘普传：服务端枚举源目录后直接创建持久化 relay 任务，
+// 入队即返回 JSON 汇总（非 NDJSON 流式），浏览器关闭不影响任务执行。
+func (h *Handler) crossTransferPlainEnqueue(w http.ResponseWriter, r *http.Request) {
+	if !ensureServiceReady(w, h.crossTransfer != nil) {
+		return
+	}
+	var req crossTransferPlainEnqueueReq
+	if err := decodeJSON(r, &req); err != nil {
+		writeErr(w, err)
+		return
+	}
+	sources := toScanRoots(req.Sources)
+	result, err := h.crossTransfer.EnqueuePlain(r.Context(), crosstransfer.EnqueuePlainInput{
+		SourceAccountID:   req.SourceAccountID,
+		SourceAccountName: req.SourceAccountName,
+		SourceDriverType:  req.SourceDriverType,
+		TargetAccountID:   req.TargetAccountID,
+		TargetAccountName: req.TargetAccountName,
+		TargetDriverType:  req.TargetDriverType,
+		TargetParentID:    req.TargetParentID,
+		TargetDisplayPath: req.TargetDisplayPath,
+		Sources:           sources,
+		Conflict:          req.Conflict,
+	})
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	writeOK(w, result)
+}
+
+func (h *Handler) crossTransferPlainEnqueueStream(w http.ResponseWriter, r *http.Request) {
+	if !ensureServiceReady(w, h.crossTransfer != nil) {
+		return
+	}
+	var req crossTransferPlainEnqueueReq
+	if err := decodeJSON(r, &req); err != nil {
+		writeErr(w, err)
+		return
+	}
+	ctx := context.WithoutCancel(r.Context())
+	h.streamCrossTransferNDJSON(w, r, func(emit func(crosstransfer.StreamEvent) error) error {
+		return h.crossTransfer.EnqueuePlainStream(ctx, crosstransfer.EnqueuePlainInput{
+			SourceAccountID: req.SourceAccountID, SourceAccountName: req.SourceAccountName,
+			SourceDriverType: req.SourceDriverType, TargetAccountID: req.TargetAccountID,
+			TargetAccountName: req.TargetAccountName, TargetDriverType: req.TargetDriverType,
+			TargetParentID: req.TargetParentID, TargetDisplayPath: req.TargetDisplayPath,
+			Sources: toScanRoots(req.Sources), Conflict: req.Conflict,
+		}, emit)
+	})
 }

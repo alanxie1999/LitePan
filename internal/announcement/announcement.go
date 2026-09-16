@@ -2,14 +2,12 @@
 package announcement
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
@@ -52,7 +50,6 @@ const (
 type Service struct {
 	url    string
 	client *http.Client
-	log    *slog.Logger
 
 	mu       sync.Mutex
 	cached   *Announcement
@@ -61,11 +58,10 @@ type Service struct {
 }
 
 // New 构造公告服务。
-func New(url string, log *slog.Logger) *Service {
+func New(url string) *Service {
 	return &Service{
 		url:    strings.TrimSpace(url),
 		client: &http.Client{Timeout: fetchTimeout},
-		log:    log,
 	}
 }
 
@@ -82,12 +78,12 @@ func (s *Service) Fetch(ctx context.Context) (*Announcement, error) {
 	s.mu.Lock()
 	now := time.Now()
 	if s.cached != nil && now.Sub(s.cachedAt) < cacheTTL {
-		item := *s.cached
+		item := cloneAnnouncement(s.cached)
 		s.mu.Unlock()
-		return &item, nil
+		return item, nil
 	}
 	if !s.failedAt.IsZero() && now.Sub(s.failedAt) < failCooldown {
-		item := s.cached
+		item := cloneAnnouncement(s.cached)
 		s.mu.Unlock()
 		return item, nil
 	}
@@ -95,28 +91,12 @@ func (s *Service) Fetch(ctx context.Context) (*Announcement, error) {
 
 	body, err := s.fetchBody(ctx)
 	if err != nil {
-		s.mu.Lock()
-		s.failedAt = time.Now()
-		s.mu.Unlock()
-		if s.log != nil {
-			s.log.Warn("announcement fetch failed", "url", s.url, "err", err)
-		}
-		s.mu.Lock()
-		item := s.cached
-		s.mu.Unlock()
-		return item, nil
+		return s.fallbackAfterFailure(), nil
 	}
 
 	item := parse(body)
 	if item == nil {
-		s.mu.Lock()
-		s.failedAt = time.Now()
-		cached := s.cached
-		s.mu.Unlock()
-		if s.log != nil {
-			s.log.Warn("announcement content ignored", "url", s.url, "reason", "invalid json or empty content")
-		}
-		return cached, nil
+		return s.fallbackAfterFailure(), nil
 	}
 	item.FetchedAt = time.Now()
 	s.mu.Lock()
@@ -124,7 +104,14 @@ func (s *Service) Fetch(ctx context.Context) (*Announcement, error) {
 	s.cachedAt = item.FetchedAt
 	s.failedAt = time.Time{}
 	s.mu.Unlock()
-	return item, nil
+	return cloneAnnouncement(item), nil
+}
+
+func (s *Service) fallbackAfterFailure() *Announcement {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.failedAt = time.Now()
+	return cloneAnnouncement(s.cached)
 }
 
 func (s *Service) fetchBody(ctx context.Context) ([]byte, error) {
@@ -155,42 +142,19 @@ func (s *Service) fetchBody(ctx context.Context) ([]byte, error) {
 // 调用方静默沿用旧缓存或返回暂无公告，避免把错误页和损坏内容展示给用户。
 func parse(raw []byte) *Announcement {
 	text := strings.TrimSpace(string(raw))
-	if text == "" {
+	if text == "" || text[0] != '{' {
 		return nil
-	}
-	hash := contentHash(text)
-	if a, ok := parseJSON(raw, hash); ok {
-		return &a
-	}
-	return nil
-}
-
-type jsonAnnouncement struct {
-	Version  string    `json:"notice_version"`
-	Badge    string    `json:"badge"`
-	Title    string    `json:"dialog_title"`
-	Banner   string    `json:"banner"`
-	Special  string    `json:"special"`
-	Lead     string    `json:"lead"`
-	Issues   []Section `json:"issues"`
-	Footnote string    `json:"footnote"`
-}
-
-func parseJSON(raw []byte, hash string) (Announcement, bool) {
-	trimmed := bytes.TrimSpace(raw)
-	if len(trimmed) == 0 || (trimmed[0] != '{' && trimmed[0] != '[') {
-		return Announcement{}, false
 	}
 	var ja jsonAnnouncement
 	if err := json.Unmarshal(raw, &ja); err != nil {
-		return Announcement{}, false
+		return nil
 	}
 	if strings.TrimSpace(ja.Title) == "" && strings.TrimSpace(ja.Lead) == "" && len(ja.Issues) == 0 {
-		return Announcement{}, false
+		return nil
 	}
 	version := strings.TrimSpace(ja.Version)
 	if version == "" {
-		version = hash
+		version = contentHash(text)
 	}
 	sections := make([]Section, 0, len(ja.Issues))
 	for _, s := range ja.Issues {
@@ -205,7 +169,7 @@ func parseJSON(raw []byte, hash string) (Announcement, bool) {
 	if title == "" {
 		title = "公告"
 	}
-	return Announcement{
+	return &Announcement{
 		Version:  version,
 		Badge:    normalizeVisible(ja.Badge),
 		Title:    title,
@@ -214,17 +178,38 @@ func parseJSON(raw []byte, hash string) (Announcement, bool) {
 		Lead:     normalizeVisible(ja.Lead),
 		Sections: sections,
 		Footnote: strings.TrimSpace(ja.Footnote),
-	}, true
+	}
+}
+
+type jsonAnnouncement struct {
+	Version  string    `json:"notice_version"`
+	Badge    string    `json:"badge"`
+	Title    string    `json:"dialog_title"`
+	Banner   string    `json:"banner"`
+	Special  string    `json:"special"`
+	Lead     string    `json:"lead"`
+	Issues   []Section `json:"issues"`
+	Footnote string    `json:"footnote"`
 }
 
 // normalizeVisible 归一化可选文本区（badge/banner/special/lead）：
 // 空值、none、false（不区分大小写）一律视为不显示。
 func normalizeVisible(v string) string {
-	switch strings.ToLower(strings.TrimSpace(v)) {
+	v = strings.TrimSpace(v)
+	switch strings.ToLower(v) {
 	case "", "none", "false":
 		return ""
 	}
-	return strings.TrimSpace(v)
+	return v
+}
+
+func cloneAnnouncement(item *Announcement) *Announcement {
+	if item == nil {
+		return nil
+	}
+	clone := *item
+	clone.Sections = append([]Section(nil), item.Sections...)
+	return &clone
 }
 
 func contentHash(s string) string {

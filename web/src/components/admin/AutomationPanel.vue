@@ -9,7 +9,7 @@
           </div>
           <div class="panel-head-actions">
             <AppButton type="button" size="sm" variant="secondary" @click="openRuns">
-              <i class="fas fa-clock-rotate-left"></i>
+              <SvgIcon name="clock-rotate-left" size="1em" />
               运行记录
             </AppButton>
             <AppBadge tone="info">{{ rules.length }} 条规则</AppBadge>
@@ -47,7 +47,7 @@
                       <template v-for="(action, index) in rule.actions" :key="action.id || index">
                         <span v-if="index > 0" class="arrow">→</span>
                         <span class="seg" :class="{ running: isRuleActionRunning(rule, index) }">
-                          <i :class="actionIcon(action.type)"></i>{{ actionLabel(action) }}
+                          <SvgIcon :name="actionIcon(action.type)" size="1em" />{{ actionLabel(action) }}
                         </span>
                       </template>
                     </div>
@@ -56,7 +56,7 @@
                     <template v-for="(action, index) in rule.actions" :key="`wide-${action.id || index}`">
                       <span v-if="index > 0" class="arrow">→</span>
                       <span class="seg">
-                        <i :class="actionIcon(action.type)"></i>{{ actionLabel(action) }}
+                        <SvgIcon :name="actionIcon(action.type)" size="1em" />{{ actionLabel(action) }}
                       </span>
                     </template>
                   </div>
@@ -108,11 +108,11 @@
               </div>
               <div class="runs-drawer-actions">
                 <button type="button" class="runs-clear-btn" :disabled="runsLoading || runs.length === 0" @click="clearRuns">
-                  <i class="fas fa-trash"></i>
+                  <SvgIcon name="trash" size="1em" />
                   清空
                 </button>
                 <button type="button" class="runs-drawer-close" title="关闭" @click="closeRuns">
-                  <i class="fas fa-times"></i>
+                  <SvgIcon name="xmark" :size="14" />
                 </button>
               </div>
             </div>
@@ -124,7 +124,7 @@
                   <button type="button" class="runs-card-head" @click="toggleRunExpanded(run.id)">
                     <span class="runs-item-name">{{ ruleNameById(run.rule_id) }}</span>
                     <span class="runs-status-mini" :class="run.status">{{ runStatusText(run.status) }}</span>
-                    <i class="fas fa-chevron-down runs-expand-ico" :class="{ open: isRunExpanded(run.id) }"></i>
+                    <SvgIcon name="chevron-down" size="1em" class="runs-expand-ico" :class="{ open: isRunExpanded(run.id) }" />
                     <span class="runs-item-meta-line">{{ runSourceLabel(run.trigger_source) }} · {{ formatDate(run.started_at) }}</span>
                   </button>
                   <ul v-if="isRunExpanded(run.id) && runStepItems(run).length" class="runs-steps">
@@ -156,17 +156,17 @@
           </div>
           <div v-if="form.trigger_type" class="node choice-node" @click="openTriggerPicker">
             <div class="node-main compact">
-              <div class="node-ico trigger"><i class="fas fa-clock"></i></div>
+              <div class="node-ico trigger"><SvgIcon name="clock" size="1em" /></div>
               <div class="node-body">
                 <div class="node-title">{{ triggerNodeTitle }}</div>
                 <div class="node-sub">{{ triggerNodeSub }}</div>
               </div>
-              <span class="node-chev"><i class="fas fa-chevron-right"></i></span>
+              <span class="node-chev"><SvgIcon name="chevron-right" size="1em" /></span>
             </div>
           </div>
           <div v-else class="node add-node" @click="openTriggerPicker">
             <div class="node-main">
-              <div class="node-ico trigger"><i class="fas fa-clock"></i></div>
+              <div class="node-ico trigger"><SvgIcon name="clock" size="1em" /></div>
               <div class="node-body">
                 <div class="node-title ph">添加触发条件</div>
                 <div class="node-sub">时间 / 间隔 / 第三方通知</div>
@@ -187,20 +187,20 @@
             >
               <div class="node-main compact" @click="openActionConfigFromCard(0)">
                 <div class="node-ico act" :class="form.actions[0].type">
-                  <i :class="actionIcon(form.actions[0].type)"></i>
+                  <SvgIcon :name="actionIcon(form.actions[0].type)" size="1em" />
                 </div>
                 <div class="node-body">
                   <div class="node-title">{{ actionNodeTitle(form.actions[0]) }}</div>
                   <div class="node-sub">{{ actionNodeSub(form.actions[0]) }}</div>
                 </div>
                 <button class="node-del" type="button" title="移除" draggable="false" @dragstart.stop.prevent @click.stop="removeAction(0)">
-                  <i class="fas fa-times"></i>
+                  <SvgIcon name="times" size="1em" />
                 </button>
               </div>
             </div>
             <div v-else class="node add-node" @click="openActionPicker(0)">
               <div class="node-main">
-                <div class="node-ico add"><i class="fas fa-plus"></i></div>
+                <div class="node-ico add"><SvgIcon name="plus" size="1em" /></div>
                 <div class="node-body">
                   <div class="node-title ph">选择要执行的任务</div>
                   <div class="node-sub">整理 / STRM / 延迟 / Emby 全局刷库</div>
@@ -220,7 +220,7 @@
                 :class="{ active: linkedSortMode }"
                 @click="toggleLinkedSortMode"
               >
-                <i class="fas" :class="linkedSortMode ? 'fa-check' : 'fa-up-down-left-right'"></i>
+                <SvgIcon :name="linkedSortMode ? 'check' : 'up-down-left-right'" size="1em" />
                 {{ linkedSortMode ? '完成排序' : '排序' }}
               </button>
             </div>
@@ -243,14 +243,14 @@
               >
                 <div class="node-main compact" @click="openActionConfigFromCard(item.index)">
                   <div class="node-ico act" :class="item.action.type">
-                    <i :class="actionIcon(item.action.type)"></i>
+                    <SvgIcon :name="actionIcon(item.action.type)" size="1em" />
                   </div>
                   <div class="node-body">
                     <div class="node-title">{{ actionNodeTitle(item.action) }}</div>
                     <div class="node-sub">{{ actionNodeSub(item.action) }}</div>
                   </div>
                   <button class="node-del" type="button" title="移除" draggable="false" @dragstart.stop.prevent @click.stop="removeAction(item.index)">
-                    <i class="fas fa-times"></i>
+                    <SvgIcon name="times" size="1em" />
                   </button>
                 </div>
               </div>
@@ -266,7 +266,7 @@
 
             <div class="node add-node" @click="openActionPicker(form.actions.length)">
               <div class="node-main">
-                <div class="node-ico add"><i class="fas fa-plus"></i></div>
+                <div class="node-ico add"><SvgIcon name="plus" size="1em" /></div>
                 <div class="node-body">
                   <div class="node-title ph">添加联动动作</div>
                   <div class="node-sub">这一步可以不添加，需要时再串联后续任务</div>
@@ -282,7 +282,7 @@
           :style="dragGhostStyle"
         >
           <div class="node-ico act" :class="dragGhost.type">
-            <i :class="actionIcon(dragGhost.type)"></i>
+            <SvgIcon :name="actionIcon(dragGhost.type)" size="1em" />
           </div>
           <div class="node-body">
             <div class="node-title">{{ dragGhost.title }}</div>
@@ -295,7 +295,7 @@
             <div class="flow-card-head">
               <div class="ch">流程预览</div>
               <button class="rail-back" type="button" @click="backToList">
-                <i class="fas fa-arrow-left"></i>
+                <SvgIcon name="arrow-left" size="1em" />
                 返回列表
               </button>
             </div>
@@ -312,14 +312,14 @@
                   <div class="flow-copy">
                     <div class="flow-title">
                       <span>{{ item.title }}</span>
-                      <span v-if="item.issue" class="flow-error-icon"><i class="fas fa-times"></i></span>
+                      <span v-if="item.issue" class="flow-error-icon"><SvgIcon name="times" size="1em" /></span>
                     </div>
                     <div v-if="item.issue" class="flow-sub flow-error-text">{{ item.issue.message }}</div>
                     <div v-else-if="item.sub" class="flow-sub">{{ item.sub }}</div>
                   </div>
                 </div>
                 <div v-if="validationOk" class="flow-ok-text">
-                  <i class="fas fa-check-circle"></i>
+                  <SvgIcon name="check-circle" size="1em" />
                   当前流程可以保存
                 </div>
               </div>
@@ -332,7 +332,7 @@
         <div class="save-combo">
           <input v-model="form.name" class="save-name-input" type="text" placeholder="填写联动名称并保存">
           <AppButton class="save-wide" type="button" variant="primary" :disabled="saving || !canSave" @click="saveRule">
-            <i class="fas fa-save"></i>
+            <SvgIcon name="save" size="1em" />
             {{ saving ? '保存中...' : '保存' }}
           </AppButton>
         </div>
@@ -353,54 +353,78 @@
     <AppPlainModal
       :open="pickerVisible"
       :title="pickerKind === 'trigger' ? '选择触发条件' : '添加执行动作'"
-      size="sm"
+      :size="pickerKind === 'trigger' ? 'sm' : 'md'"
       body-flush
       @close="cancelPicker"
     >
       <div class="automation-scope">
         <div v-if="pickerKind === 'trigger'" class="pick-list">
           <button class="pick-option" type="button" @click="chooseTrigger('daily')">
-            <span class="pick-ico trigger"><i class="fas fa-clock"></i></span>
+            <span class="pick-ico trigger"><SvgIcon name="clock" size="1em" /></span>
             <span>
               <b>每天定时</b>
               <em>每天到设定时间触发</em>
             </span>
-            <i class="fas fa-chevron-right"></i>
+            <SvgIcon name="chevron-right" size="1em" />
           </button>
           <button class="pick-option" type="button" @click="chooseTrigger('interval')">
-            <span class="pick-ico interval"><i class="fas fa-rotate"></i></span>
+            <span class="pick-ico interval"><SvgIcon name="rotate" size="1em" /></span>
             <span>
               <b>本次触发时间 + 间隔</b>
               <em>从某个时间开始按间隔循环执行</em>
             </span>
-            <i class="fas fa-chevron-right"></i>
+            <SvgIcon name="chevron-right" size="1em" />
           </button>
           <button class="pick-option" type="button" @click="chooseTrigger('external_event')">
-            <span class="pick-ico external_event"><i class="fas fa-plug"></i></span>
+            <span class="pick-ico external_event"><SvgIcon name="plug" size="1em" /></span>
             <span>
               <b>第三方通知</b>
               <em>外部程序调用 Webhook 接口通知 LitePan</em>
             </span>
-            <i class="fas fa-chevron-right"></i>
+            <SvgIcon name="chevron-right" size="1em" />
           </button>
           <button class="pick-option" type="button" @click="chooseTrigger('offline_download')">
-            <span class="pick-ico offline_download"><i class="fas fa-cloud-arrow-down"></i></span>
+            <span class="pick-ico offline_download"><SvgIcon name="cloud-arrow-down" size="1em" /></span>
             <span>
               <b>离线下载完成</b>
               <em>指定目录或其子目录中的离线任务完成后触发</em>
             </span>
-            <i class="fas fa-chevron-right"></i>
+            <SvgIcon name="chevron-right" size="1em" />
           </button>
         </div>
-        <div v-else class="pick-list">
-          <button v-for="item in actionTypeOptions" :key="item.value" class="pick-option" type="button" @click="chooseAction(item.value)">
-            <span class="pick-ico" :class="item.value"><i :class="actionIcon(item.value)"></i></span>
-            <span>
-              <b>{{ item.label }}</b>
-              <em>{{ item.desc }}</em>
-            </span>
-            <i class="fas fa-chevron-right"></i>
-          </button>
+        <div v-else class="action-picker">
+          <div class="action-picker__scroll">
+            <template v-for="group in actionGroups" :key="group.id">
+              <div class="action-picker__group-title">
+                {{ group.name }}<span class="action-picker__group-count">{{ group.items.length }}</span>
+              </div>
+              <div class="action-picker__grid">
+                <button
+                  v-for="item in group.items"
+                  :key="item.value"
+                  class="action-cell"
+                  type="button"
+                  @click="chooseAction(item.value)"
+                  @mouseenter="setActionInfo(item)"
+                  @mouseleave="resetActionInfo"
+                  @focus="setActionInfo(item)"
+                  @blur="resetActionInfo"
+                  @touchstart.passive="setActionInfo(item)"
+                >
+                  <span class="pick-ico action-cell__ico" :class="item.value"><SvgIcon :name="actionIcon(item.value)" size="1em" /></span>
+                  <span class="action-cell__name">{{ item.label }}</span>
+                </button>
+              </div>
+            </template>
+            <div v-if="!actionGroups.length" class="action-picker__empty">暂无可选动作</div>
+          </div>
+          <div class="action-picker__info">
+            <template v-if="actionInfo">
+              <span class="pick-ico action-picker__info-ico" :class="actionInfo.value"><SvgIcon :name="actionIcon(actionInfo.value)" size="1em" /></span>
+              <span class="action-picker__info-text"><b>{{ actionInfo.label }}</b>{{ actionInfo.desc }}</span>
+            </template>
+            <span v-else class="action-picker__info-text action-picker__info-text--hint">悬停或触摸动作查看说明</span>
+          </div>
         </div>
       </div>
     </AppPlainModal>
@@ -429,7 +453,7 @@
             <div class="cfg-row">
               <label>监控目录</label>
               <button class="time-btn" type="button" @click="openOfflineFolderPicker">
-                <i class="fas fa-folder-tree"></i>
+                <SvgIcon name="folder-tree" size="1em" />
                 {{ offlineDownloadDirectoryLabel }}
               </button>
               <div class="field-tip">该账号中，目标为此目录或其任意子目录的离线任务完成后触发。</div>
@@ -439,7 +463,7 @@
           <div class="cfg-row">
             <label>{{ form.trigger_type === 'daily' ? '每天触发时间' : '首次触发时间' }}</label>
             <button class="time-btn" type="button" @click="openTimePicker">
-              <i class="fas fa-clock"></i>
+              <SvgIcon name="clock" size="1em" />
               {{ triggerTime || '请选择时间' }}
             </button>
           </div>
@@ -496,7 +520,7 @@
               <input v-model.number="configAction.params.seconds" type="number" class="ctrl" min="1" max="86400">
             </div>
           </template>
-          <template v-else-if="configAction.type === 'emby_refresh'">
+          <template v-else-if="isEmbyScopedAction(configAction)">
             <div class="cfg-row">
               <label>Emby配置</label>
               <AppSelect
@@ -507,7 +531,7 @@
               />
             </div>
             <div class="cfg-row">
-              <label>扫描方式</label>
+              <label>执行范围</label>
               <AppSelect v-model="configAction.params.mode" :options="embyRefreshModeOptions" @update:model-value="mode => onEmbyRefreshModeChange(configAction, mode)" />
             </div>
             <div v-if="configAction.params.mode === 'library'" class="cfg-row">
@@ -592,6 +616,7 @@ import {
 import { fetchEmbyLibraries } from '../../api/emby'
 import { formatTime } from '../../utils/format'
 import '@/styles/admin-table.css'
+import SvgIcon from "@/components/icons/SvgIcon.vue";
 
 const viewMode = ref('list')
 const loading = ref(false)
@@ -655,19 +680,21 @@ const form = reactive({
 
 const ACTION_DEFINITIONS = {
   cache_clear: {
+    group: 'organize',
     label: '刷新目录',
     optionLabel: '刷新目录',
-    icon: 'fas fa-broom',
-    desc: '自动清理后续任务涉及账号的目录缓存',
+    icon: 'broom',
+    desc: '清理后续任务涉及账号的全部目录缓存',
     normalize: () => ({}),
     canApply: () => true,
     nodeTitle: () => '刷新目录',
     previewTitle: () => '刷新目录'
   },
   organize: {
+    group: 'organize',
     label: '整理任务',
     optionLabel: '执行整理任务',
-    icon: 'fas fa-folder-tree',
+    icon: 'folder-tree',
     desc: '生成计划并执行整理，结果会经过质量门槛判断',
     normalize: params => ({
       task_id: params.task_id ? String(params.task_id) : '',
@@ -678,9 +705,10 @@ const ACTION_DEFINITIONS = {
     previewTitle: action => `整理任务[${findTaskLabel('organize', action.params.task_id)}]`
   },
   strm: {
+    group: 'media',
     label: 'STRM任务',
     optionLabel: '执行STRM任务',
-    icon: 'fas fa-film',
+    icon: 'film',
     desc: '触发已有 STRM 任务，扫描范围遵循任务自身配置',
     normalize: params => ({
       task_id: params.task_id ? Number(params.task_id) : '',
@@ -691,9 +719,10 @@ const ACTION_DEFINITIONS = {
     previewTitle: action => `执行STRM任务[${findTaskLabel('strm', action.params.task_id)}]`
   },
   strm_scrape: {
+    group: 'media',
     label: '生成本地STRM元数据',
     optionLabel: '生成本地STRM元数据',
-    icon: 'fas fa-images',
+    icon: 'images',
     desc: '对该 STRM 任务执行本地元数据刮削',
     normalize: params => ({
       task_id: params.task_id ? Number(params.task_id) : '',
@@ -705,9 +734,10 @@ const ACTION_DEFINITIONS = {
     previewTitle: action => `生成本地STRM元数据[${findTaskLabel('strm', action.params.task_id)}]`
   },
   delay: {
+    group: 'flow',
     label: '延迟',
     optionLabel: '延迟等待',
-    icon: 'fas fa-clock',
+    icon: 'clock',
     desc: '等待一段时间后再继续下一步',
     normalize: params => ({ seconds: Number(params.seconds || 60) }),
     canApply: action => Number(action.params.seconds || 0) > 0,
@@ -715,9 +745,10 @@ const ACTION_DEFINITIONS = {
     previewTitle: action => `延迟${formatDelay(action.params.seconds)}`
   },
   emby_refresh: {
+    group: 'media',
     label: 'Emby刷库',
     optionLabel: 'Emby全局刷库',
-    icon: 'fas fa-server',
+    icon: 'server',
     desc: '通知 Emby 扫描全部媒体库，或只扫描指定媒体库',
     normalize: params => ({
       emby_id: String(params.emby_id || defaultEmbyConfig()?.id || ''),
@@ -730,13 +761,31 @@ const ACTION_DEFINITIONS = {
     ),
     nodeTitle: action => `Emby ${embyRefreshModeLabel(action)}「${embyRefreshTargetLabel(action)}」`,
     previewTitle: action => `Emby${embyRefreshModeLabel(action)}[${embyRefreshTargetLabel(action)}]`
+  },
+  emby_complete_media_info: {
+    group: 'media',
+    label: 'Emby 补全媒体信息',
+    optionLabel: 'Emby 补全媒体信息',
+    icon: 'circle-info',
+    desc: '检查媒体流信息缺失的条目，并通知 Emby 重新提取',
+    normalize: params => ({
+      emby_id: String(params.emby_id || defaultEmbyConfig()?.id || ''),
+      mode: params.mode === 'library' ? 'library' : 'global',
+      library_id: String(params.library_id || ''),
+      library_name: String(params.library_name || '')
+    }),
+    canApply: action => Boolean(findEmbyConfig(action?.params?.emby_id)?.emby_url) && (
+      action?.params?.mode !== 'library' || Boolean(String(action?.params?.library_id || '').trim())
+    ),
+    nodeTitle: action => `Emby 补全媒体信息「${embyRefreshTargetLabel(action)}」`,
+    previewTitle: action => `Emby补全媒体信息[${embyRefreshTargetLabel(action)}]`
   }
 }
 
 const UNKNOWN_ACTION = {
   label: '未知动作',
   optionLabel: '未知动作',
-  icon: 'fas fa-circle',
+  icon: 'circle',
   desc: '',
   normalize: () => ({}),
   canApply: () => true,
@@ -744,17 +793,43 @@ const UNKNOWN_ACTION = {
   previewTitle: () => '未知动作'
 }
 
+// 动作分组：新增动作时在 ACTION_DEFINITIONS 里标 group，未标的一律落入「其他」
+const ACTION_GROUP_ORDER = [
+  { id: 'media', name: '媒体库' },
+  { id: 'organize', name: '文件整理' },
+  { id: 'flow', name: '流程控制' },
+  { id: 'other', name: '其他' }
+]
+
 const actionDefinition = type => ACTION_DEFINITIONS[type] || UNKNOWN_ACTION
 const actionTypeOptions = Object.entries(ACTION_DEFINITIONS).map(([value, definition]) => ({
   value,
   label: definition.optionLabel,
-  desc: definition.desc
+  desc: definition.desc,
+  group: definition.group || 'other'
 }))
 
 const organizeTaskOptions = computed(() => options.value.organize_tasks.map(task => ({
   value: String(task.id),
   label: task.name || task.id
 })))
+
+// ---- 动作选择面板（图标矩阵）----
+const actionInfo = ref(null)
+
+const actionGroups = computed(() => (
+  ACTION_GROUP_ORDER
+    .map(group => ({ ...group, items: actionTypeOptions.filter(item => item.group === group.id) }))
+    .filter(group => group.items.length > 0)
+))
+
+const setActionInfo = item => { actionInfo.value = item }
+const resetActionInfo = () => { actionInfo.value = null }
+
+// 每次打开动作选择面板时重置说明条
+watch(pickerVisible, visible => {
+  if (visible && pickerKind.value === 'action') actionInfo.value = null
+})
 
 const strmTaskOptions = computed(() => options.value.strm_tasks.map(task => ({
   value: Number(task.id),
@@ -1100,8 +1175,8 @@ const openConfig = (mode, actionIndex = -1) => {
   if (actionIndex >= 0) ensureStrmRunMode(form.actions[actionIndex])
   if (mode === 'action') {
     const targetAction = pendingConfigAction.value || form.actions[actionIndex]
-    if (targetAction?.type === 'emby_refresh') {
-      normalizeEmbyRefreshAction(targetAction)
+    if (isEmbyScopedAction(targetAction)) {
+      normalizeEmbyScopedAction(targetAction)
       void ensureEmbyLibrariesLoaded()
     }
   }
@@ -1311,7 +1386,7 @@ const applyConfig = () => {
   }
   if (configMode.value === 'trigger') commitTrigger()
   if (configAction.value) ensureStrmRunMode(configAction.value)
-  if (configAction.value?.type === 'emby_refresh') normalizeEmbyRefreshAction(configAction.value)
+  if (isEmbyScopedAction(configAction.value)) normalizeEmbyScopedAction(configAction.value)
   if (pendingConfigAction.value) {
     const action = pendingConfigAction.value
     const insertIndex = pendingConfigInsertIndex.value
@@ -1396,8 +1471,10 @@ const findEmbyConfig = (embyId) => (
   (options.value.emby_configs || []).find(item => String(item.id) === String(embyId)) || null
 )
 
-const normalizeEmbyRefreshAction = (action) => {
-  if (!action || action.type !== 'emby_refresh') return
+const isEmbyScopedAction = action => ['emby_refresh', 'emby_complete_media_info'].includes(action?.type)
+
+const normalizeEmbyScopedAction = (action) => {
+  if (!isEmbyScopedAction(action)) return
   if (!findEmbyConfig(action.params.emby_id)) action.params.emby_id = defaultEmbyConfig()?.id || ''
   action.params.mode = action.params.mode === 'library' ? 'library' : 'global'
   if (action.params.mode !== 'library') {
@@ -1430,7 +1507,7 @@ const ensureEmbyLibrariesLoaded = async (force = false) => {
 }
 
 const onEmbyConfigChange = (action, embyId) => {
-  if (!action || action.type !== 'emby_refresh') return
+  if (!isEmbyScopedAction(action)) return
   action.params.emby_id = String(embyId || '')
   action.params.library_id = ''
   action.params.library_name = ''
@@ -1441,7 +1518,7 @@ const onEmbyConfigChange = (action, embyId) => {
 }
 
 const onEmbyRefreshModeChange = (action, mode) => {
-  if (!action || action.type !== 'emby_refresh') return
+  if (!isEmbyScopedAction(action)) return
   action.params.mode = mode === 'library' ? 'library' : 'global'
   if (action.params.mode === 'library') {
     void ensureEmbyLibrariesLoaded()
@@ -1452,7 +1529,7 @@ const onEmbyRefreshModeChange = (action, mode) => {
 }
 
 const onEmbyLibraryChange = (action, libraryId) => {
-  if (!action || action.type !== 'emby_refresh') return
+  if (!isEmbyScopedAction(action)) return
   action.params.library_id = String(libraryId || '')
   action.params.library_name = findEmbyLibraryName(action.params.library_id)
 }
@@ -1607,7 +1684,7 @@ const deleteRule = async (rule) => {
       message: `确认删除「${rule.name}」？运行记录也会一并清理。`,
       confirmText: '删除',
       danger: true,
-      icon: 'trash'
+      icon: 'badge-trash'
     })
     await removeWithDust({
       target: findDustTarget(automationRuleList.value, `automation-rule-${rule.id}`),
@@ -1846,7 +1923,7 @@ const clearRuns = async () => {
       message: '确认清空全部自动联动运行记录？该操作不会删除联动规则。',
       confirmText: '清空',
       danger: true,
-      icon: 'trash'
+      icon: 'badge-trash'
     })
     await clearAutomationRuns()
     runs.value = []
@@ -1956,7 +2033,7 @@ defineExpose({
 .node,
 .card {
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-card);
   background: var(--panel);
   box-shadow: var(--shadow);
 }
@@ -2032,7 +2109,7 @@ defineExpose({
   height: 32px;
   padding: 0 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--panel);
   color: var(--muted);
   cursor: pointer;
@@ -2055,7 +2132,7 @@ defineExpose({
   width: 32px;
   height: 32px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--panel);
   color: var(--muted);
   cursor: pointer;
@@ -2090,7 +2167,7 @@ defineExpose({
 
 .runs-item {
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   padding: 12px;
   background: var(--panel);
   box-shadow: var(--shadow-card);
@@ -2133,7 +2210,7 @@ defineExpose({
   align-items: center;
   height: 22px;
   padding: 0 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 11.5px;
   font-weight: 850;
   white-space: nowrap;
@@ -2190,7 +2267,7 @@ defineExpose({
   top: 21px;
   bottom: -1px;
   width: 2px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--line);
 }
 
@@ -2263,7 +2340,7 @@ defineExpose({
 .runs-step.failed .runs-step-body {
   margin: -5px 0 0 -4px;
   padding: 6px 8px 7px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: rgba(239, 68, 68, 0.025);
 }
 
@@ -2464,7 +2541,7 @@ defineExpose({
   align-items: center;
   gap: 5px;
   padding: 2px 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
 }
 
@@ -2474,7 +2551,7 @@ defineExpose({
   gap: 5px;
   flex: 0 0 auto;
   padding: 2px 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .flowtext .seg.running {
@@ -2487,7 +2564,7 @@ defineExpose({
   content: '执行中';
   margin-left: 2px;
   padding: 1px 5px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--blue);
   color: #fff;
   font-size: 10px;
@@ -2551,7 +2628,7 @@ defineExpose({
   height: 30px;
   padding: 0 10px;
   border: 1px solid var(--line);
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--panel) 72%, transparent);
   color: var(--muted);
   cursor: pointer;
@@ -2578,7 +2655,7 @@ defineExpose({
   min-height: 18px;
   margin: -8px 0;
   border: 1.5px dashed transparent;
-  border-radius: 14px;
+  border-radius: var(--radius-card);
   color: transparent;
   font-size: 12px;
   font-weight: 850;
@@ -2633,7 +2710,7 @@ defineExpose({
   min-height: 92px;
   padding: 20px 22px;
   border: 1px solid color-mix(in srgb, var(--blue) 42%, var(--line));
-  border-radius: 14px;
+  border-radius: var(--radius-card);
   background: color-mix(in srgb, var(--panel) 82%, transparent);
   box-shadow: 0 22px 46px rgba(31, 42, 61, 0.18);
   pointer-events: none;
@@ -2668,7 +2745,7 @@ defineExpose({
   flex: 0 0 50px;
   width: 50px;
   height: 50px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: color-mix(in srgb, #6366f1 16%, var(--panel));
   color: #6366f1;
   font-size: 18px;
@@ -2694,7 +2771,8 @@ defineExpose({
   color: var(--warn);
 }
 
-.node-ico.emby_refresh {
+.node-ico.emby_refresh,
+.node-ico.emby_complete_media_info {
   background: color-mix(in srgb, #8b5cf6 18%, var(--panel));
   color: #8b5cf6;
 }
@@ -2762,7 +2840,7 @@ defineExpose({
   height: 40px;
   padding: 0 12px;
   border: 1.5px solid var(--line);
-  border-radius: 11px;
+  border-radius: var(--radius-md);
   background: var(--panel);
   color: var(--ink);
   outline: none;
@@ -2819,7 +2897,7 @@ defineExpose({
   height: 32px;
   padding: 0 11px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   background: color-mix(in srgb, var(--panel) 72%, transparent);
   color: var(--muted);
   font-size: 12px;
@@ -2848,7 +2926,7 @@ defineExpose({
   width: min(560px, 100%);
   min-height: 48px;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-card);
   overflow: hidden;
   background: var(--panel);
   box-shadow: 0 14px 30px rgba(31, 42, 61, 0.08);
@@ -2928,7 +3006,7 @@ defineExpose({
   position: absolute;
   left: 19px;
   width: 2px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: linear-gradient(180deg, rgba(16, 185, 129, 0.32), rgba(148, 163, 184, 0.26));
 }
 
@@ -3119,7 +3197,7 @@ defineExpose({
   font-size: 12px;
 }
 
-.pick-option > i {
+.pick-option > i, .pick-option > .lp-svg-icon {
   color: var(--muted2);
   font-size: 13px;
 }
@@ -3130,7 +3208,7 @@ defineExpose({
   flex: 0 0 38px;
   width: 38px;
   height: 38px;
-  border-radius: 11px;
+  border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--blue) 16%, var(--panel));
   color: var(--blue);
   font-size: 17px;
@@ -3162,9 +3240,169 @@ defineExpose({
   color: var(--warn);
 }
 
-.pick-ico.emby_refresh {
+.pick-ico.emby_refresh,
+.pick-ico.emby_complete_media_info {
   background: color-mix(in srgb, #8b5cf6 18%, var(--panel));
   color: #8b5cf6;
+}
+
+/* ---- 动作选择面板：图标矩阵（Launchpad 风），深色模式跟随主题变量 ---- */
+/* 超高时不设内部滚动，沿用弹窗统一模式：滚动条在视口右侧（overlay 滚动） */
+.action-picker__scroll {
+  padding: 0 20px 8px;
+}
+
+.action-picker__group-title {
+  margin: 12px 4px 7px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.action-picker__group-title:first-child {
+  margin-top: 4px;
+}
+
+.action-picker__group-count {
+  margin-left: 4px;
+  color: var(--muted2);
+  font-weight: 400;
+}
+
+.action-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.action-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 4px 9px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease;
+}
+
+.action-cell:hover {
+  background: var(--surface-hover);
+}
+
+.action-cell:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: -2px;
+}
+
+.action-cell__ico.pick-ico {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-md);
+  font-size: 19px;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.18s ease;
+}
+
+.action-cell:hover .action-cell__ico {
+  transform: scale(1.06);
+}
+
+.action-cell__name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: calc(1.35em * 2);
+  color: var(--text-regular);
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.action-picker__empty {
+  padding: 40px 20px;
+  color: var(--muted2);
+  font-size: 13px;
+  text-align: center;
+}
+
+.action-picker__info {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 38px;
+  margin: 2px 20px 12px;
+  padding: 8px 12px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--soft);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.action-picker__info-ico.pick-ico {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-xs);
+  font-size: 11px;
+}
+
+/* 固定单行 + 省略号：hover 切换内容时面板高度不变，避免视觉抖动 */
+.action-picker__info-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.action-picker__info-text b {
+  margin-right: 6px;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.action-picker__info-text--hint {
+  color: var(--muted2);
+}
+
+/* 手机小屏：3 列并收紧留白 */
+@media (max-width: 480px) {
+  .action-picker__scroll {
+    padding: 0 12px 6px;
+  }
+
+  .action-picker__grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+  }
+
+  .action-cell {
+    padding: 8px 2px 7px;
+  }
+
+  .action-cell__ico.pick-ico {
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-md);
+    font-size: 17px;
+  }
+
+  .action-picker__info {
+    margin: 2px 12px 10px;
+  }
 }
 
 .cfg-body {
@@ -3210,7 +3448,7 @@ defineExpose({
   gap: 7px;
   padding: 12px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--soft);
 }
 
@@ -3231,7 +3469,7 @@ defineExpose({
   display: block;
   margin: 0;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--soft) 88%, var(--line));
   color: var(--ink);
   font-size: 12px;

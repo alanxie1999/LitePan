@@ -61,6 +61,7 @@ func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *
 	fileSvc := file.NewService(core.exec, core.cache, st.store.Accounts, core.bus, st.settings, core.listHits)
 	fileSvc.SetLogger(logs.For(logx.ModuleFileOp))
 	playbackSvc := playback.NewService(core.exec, core.cache)
+	playbackSvc.SetLogger(logs.For(logx.ModuleSystem))
 	strmSvc, coord := wireSTRM(st, fileSvc, playbackSvc, core.bus, logs, cfg.DataDir, cfg.StrmDir, cfg.ListenAddr, core.secret)
 	core.strm = coord
 	retentionSvc, retentionCoord := wireCacheRetention(st, fileSvc, core.cache, core.bus, logs)
@@ -167,6 +168,13 @@ func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *
 		Playback: playbackSvc,
 		Strm:     strmSvc,
 		Log:      logs.For(logx.ModuleSystem),
+		ResolvePath: func(ctx context.Context, accountID int64, rootID, relativePath string) (string, error) {
+			item, err := fileSvc.ResolvePath(ctx, accountID, rootID, relativePath)
+			if err != nil {
+				return "", err
+			}
+			return item.ID, nil
+		},
 	})
 	fnosProxySvc := fnosproxy.New(fnosproxy.Options{
 		Settings:       st.settings,
@@ -175,6 +183,13 @@ func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *
 		StrmDir:        cfg.StrmDir,
 		Log:            logs.For(logx.ModuleSystem),
 		PortUsedByEmby: embyProxySvc.UsesPort,
+		ResolvePath: func(ctx context.Context, accountID int64, rootID, relativePath string) (string, error) {
+			item, err := fileSvc.ResolvePath(ctx, accountID, rootID, relativePath)
+			if err != nil {
+				return "", err
+			}
+			return item.ID, nil
+		},
 	})
 	automationSvc := automation.New(automation.Options{
 		Rules:      st.store.AutomationRules,

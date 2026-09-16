@@ -141,12 +141,22 @@ type Payload struct {
 	Items      []Item     `json:"items"`
 }
 
-// Snapshot 返回当前全部设置（含元数据与当前值），按声明顺序。
+// Snapshot 返回当前全部设置（含元数据与当前值），按声明顺序；不含 Hidden 键。
 func (s *Service) Snapshot() Payload {
+	return s.snapshot(false)
+}
+
+// SnapshotAll 同 Snapshot，但额外带上 Hidden 键（敏感值仍打码）。
+// 供界面偏好这类"后台不展示、前端需要读回"的设置使用。
+func (s *Service) SnapshotAll() Payload {
+	return s.snapshot(true)
+}
+
+func (s *Service) snapshot(includeHidden bool) Payload {
 	items := make([]Item, 0, len(s.specs))
 	for i := range s.specs {
 		sp := &s.specs[i]
-		if sp.Hidden {
+		if sp.Hidden && !includeHidden {
 			continue
 		}
 		stored, ok := s.raw(sp.Key)
@@ -180,6 +190,16 @@ func (s *Service) Snapshot() Payload {
 
 // Update 校验并写入一批设置（只接受已知键），成功后增量更新内存快照。
 func (s *Service) Update(ctx context.Context, in map[string]string) error {
+	return s.update(ctx, in, true)
+}
+
+// UpdateSilent 校验并写入内部状态，但不产生“系统设置已更新”日志。
+// 仅用于公告已读版本等非用户设置，普通设置更新仍应调用 Update。
+func (s *Service) UpdateSilent(ctx context.Context, in map[string]string) error {
+	return s.update(ctx, in, false)
+}
+
+func (s *Service) update(ctx context.Context, in map[string]string, writeLog bool) error {
 	normalized := make(map[string]string, len(in))
 	for k, v := range in {
 		sp := s.byKey[k]
@@ -202,7 +222,20 @@ func (s *Service) Update(ctx context.Context, in map[string]string) error {
 		s.vals[k] = v
 	}
 	s.mu.Unlock()
-	if s.log != nil && len(normalized) > 0 {
+	// 全部为 SilentLog 键（例如信息条开合这类界面偏好）时不写日志，避免噪音。
+	if writeLog && len(normalized) > 0 {
+		allSilent := true
+		for k := range normalized {
+			if sp := s.byKey[k]; sp == nil || !sp.SilentLog {
+				allSilent = false
+				break
+			}
+		}
+		if allSilent {
+			writeLog = false
+		}
+	}
+	if writeLog && s.log != nil && len(normalized) > 0 {
 		keys := make([]string, 0, len(normalized))
 		for k := range normalized {
 			keys = append(keys, k)

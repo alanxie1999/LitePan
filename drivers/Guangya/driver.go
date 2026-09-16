@@ -16,8 +16,10 @@ import (
 )
 
 type Driver struct {
-	add    Addition
-	client *http.Client
+	driver.AuthRefreshControl
+	add          Addition
+	client       *http.Client
+	uploadClient *http.Client
 
 	intervalGate driver.RequestIntervalGate
 	persist      driver.AuthPersistFunc
@@ -70,6 +72,9 @@ func (d *Driver) Init(ctx context.Context) error {
 	if d.client == nil {
 		d.client = httpx.NewClient(httpx.ClientOptions{Timeout: 30 * time.Second})
 	}
+	if d.uploadClient == nil {
+		d.uploadClient = httpx.NewStreamingClient(d.client, 60*time.Second)
+	}
 	d.deviceIDVal = normalizeDeviceID(d.add.DeviceID)
 
 	d.mu.Lock()
@@ -94,6 +99,9 @@ func (d *Driver) Init(ctx context.Context) error {
 		}
 	}
 	if err := d.validateToken(ctx); err != nil {
+		if !domain.IsAuthExpiredError(err) {
+			return err
+		}
 		if _, rerr := d.doRefresh(ctx); rerr != nil {
 			return rerr
 		}
@@ -106,6 +114,7 @@ func (d *Driver) Init(ctx context.Context) error {
 
 func (d *Driver) Drop(context.Context) error {
 	httpx.CloseClient(d.client)
+	httpx.CloseClient(d.uploadClient)
 	return nil
 }
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { containsQuery } from "@/utils/format";
 import { computed, onMounted, reactive, ref } from "vue";
 import { getApiErrorMessage } from "@/api/client";
 import {
@@ -13,13 +14,13 @@ import { fetchFnosConfig, saveFnosConfig, testFnosConfig } from "@/api/fnos";
 import { confirm } from "@/composables/useConfirm";
 import { copyTextToClipboard, toast } from "@/composables/useToast";
 import AppButton from "@/components/base/AppButton.vue";
+import ToolCard from "@/components/admin/ToolCard.vue";
 import ProxyWorkspace, { type ProxyField, type ProxyWorkspaceItem } from "@/components/admin/ProxyWorkspace.vue";
 
 const props = withDefaults(defineProps<{ searchQuery?: string }>(), { searchQuery: "" });
 
 function matches(title: string) {
-  const q = props.searchQuery.trim().toLowerCase();
-  return !q || title.toLowerCase().includes(q);
+  return containsQuery(title, props.searchQuery);
 }
 
 /* ── Emby 多配置 ── */
@@ -82,7 +83,7 @@ const embyFields: ProxyField[] = [
     label: "STRM 直读客户端",
     placeholder: "默认留空",
     helpTitle: "STRM 直读客户端说明",
-    helpBody: "一般无需填写。播放器无法通过反代播放 STRM 时，可让它自己读取 STRM 中的地址。<br>填写客户端关键字，多个用分号隔开，例如 <code>XXXPlay;YYYPlayer</code>；未匹配的播放器仍由 LitePan 代取地址。<br>外网播放时，请确保 STRM 的 URL 基础地址可从外网访问。",
+    helpBody: "一般无需填写。播放器无法通过反代播放 STRM 时，可让它自己读取 STRM 中的地址。<br>填写客户端关键字，多个用分号隔开，例如 <code>XXXPlay;YYYPlayer</code>；未匹配的播放器仍由 LitePan 代取地址，填错了反而播不了。<br>外网播放时，请确保 STRM 的 URL 基础地址可从外网访问。",
   },
 ];
 
@@ -342,7 +343,7 @@ const fnosFields: ProxyField[] = [
     label: "STRM 直读客户端",
     placeholder: "Infuse;XXXPlay",
     helpTitle: "STRM 直读客户端说明",
-    helpBody: "部分播放器（如 Infuse）不支持由 LitePan 代取下载地址，需要自己读取 STRM 中的地址。<br>填写这些播放器的客户端关键字，多个用分号隔开，例如 <code>Infuse;XXXPlay</code>；未匹配的播放器仍由 LitePan 代取地址。<br>外网播放时，请确保 STRM 的 URL 基础地址可从外网访问。",
+    helpBody: "目前已知只有 Infuse 不支持由 LitePan 代取下载地址，需要自己读取 STRM 中的地址。<br>填写这些播放器的客户端关键字，多个用分号隔开，例如 <code>Infuse;XXXPlay</code>；未匹配的播放器仍由 LitePan 代取地址，填错了反而播不了。<br>外网播放时，请确保 STRM 的 URL 基础地址可从外网访问。",
   },
 ];
 
@@ -443,34 +444,51 @@ onMounted(async () => {
 
 <template>
   <div class="proxy-enhancement-cards">
-    <article v-show="matches('Emby 反代')" class="tool-card" :class="embyEnabled ? 'is-enabled' : 'is-disabled'">
-      <span class="tool-card__bar" :class="embyEnabled ? 'is-enabled' : 'is-disabled'" />
-      <div class="tool-card__head">
-        <img class="tool-card__logo" src="/logos/emby.png" alt="Emby" />
-        <div class="tool-card__meta"><h3 class="tool-card__name">Emby 反代</h3><p class="tool-card__driver">STRM 直连 · 多 Emby 服务</p></div>
+    <ToolCard
+      v-show="matches('Emby 反代')"
+      :enabled="embyEnabled"
+      name="Emby 反代"
+      driver="STRM 直连 · 多 Emby 服务"
+      logo-src="/logos/emby.png"
+      logo-fit="contain"
+      logo-alt="Emby"
+      :stat-value="embyConfigs.length"
+      :stat-label="`个配置 · ${embyRunning} 个运行`"
+    >
+      <template #toggle>
         <button class="check-toggle" type="button" :class="{ on: embyEnabled }" :disabled="embySaving" title="启用 / 停用" @click="setEmbyEnabled(!embyEnabled)"><svg viewBox="0 0 16 16"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
-      </div>
-      <p class="tool-card__desc">将 Emby 的 STRM 播放请求转换为网盘 302 直链，避免媒体流量经过 Emby 服务器中转。</p>
-      <div class="tool-card__row"><div class="tool-card__stat"><span class="tool-card__num">{{ embyConfigs.length }}</span><span class="tool-card__label">个配置 · {{ embyRunning }} 个运行</span></div><AppButton size="sm" variant="secondary" @click="openEmby">配置反代</AppButton></div>
-    </article>
+      </template>
+      将 Emby 的 STRM 播放请求转换为网盘 302 直链，避免媒体流量经过 Emby 服务器中转。
+      <template #actions>
+        <AppButton size="sm" variant="secondary" @click="openEmby">配置反代</AppButton>
+      </template>
+    </ToolCard>
 
-    <article v-show="matches('飞牛影视反代')" class="tool-card" :class="fnosEnabled ? 'is-enabled' : 'is-disabled'">
-      <span class="tool-card__bar" :class="fnosEnabled ? 'is-enabled' : 'is-disabled'" />
-      <div class="tool-card__head">
-        <img class="tool-card__logo" src="/logos/fnmovie.png" alt="飞牛影视" />
-        <div class="tool-card__meta"><h3 class="tool-card__name">飞牛影视反代</h3><p class="tool-card__driver">STRM 直连 · 飞牛路径转换</p></div>
+    <ToolCard
+      v-show="matches('飞牛影视反代')"
+      :enabled="fnosEnabled"
+      name="飞牛影视反代"
+      driver="STRM 直连 · 飞牛路径转换"
+      logo-src="/logos/fnmovie.png"
+      logo-fit="contain"
+      logo-alt="飞牛影视"
+      :stat-value="fnosRunning ? '运行中' : fnosEnabled ? '待监听' : '未启用'"
+    >
+      <template #toggle>
         <button class="check-toggle" type="button" :class="{ on: fnosEnabled }" :disabled="fnosSaving" title="启用 / 停用" @click="setFnosEnabled(!fnosEnabled)"><svg viewBox="0 0 16 16"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
-      </div>
-      <p class="tool-card__desc">解决Vidhub、Senplayer、爆米花等第三方播放器添加飞牛影视源后，无法播放STRM的问题。</p>
-      <div class="tool-card__row"><div class="tool-card__stat"><span class="tool-card__num">{{ fnosRunning ? '运行中' : fnosEnabled ? '待监听' : '未启用' }}</span></div><AppButton size="sm" variant="secondary" @click="fnosOpen = true">配置反代</AppButton></div>
-    </article>
+      </template>
+      解决Vidhub、Senplayer、爆米花等第三方播放器添加飞牛影视源后，无法播放STRM的问题。
+      <template #actions>
+        <AppButton size="sm" variant="secondary" @click="fnosOpen = true">配置反代</AppButton>
+      </template>
+    </ToolCard>
 
     <ProxyWorkspace
       v-model="embyDraft"
       :open="embyOpen"
       title="Emby 反代配置"
       caption="EMBY 配置"
-      icon="🎬"
+      icon="hand-play"
       subtitle="STRM 直连 · 多 Emby 服务"
       :items="embyItems"
       :selected-id="embySelectedID"
@@ -500,7 +518,7 @@ onMounted(async () => {
       :open="fnosOpen"
       title="飞牛影视反代配置"
       caption="飞牛影视配置"
-      icon="📺"
+      icon="hand-monitor"
       subtitle="STRM 直连 · 飞牛路径转换"
       :items="fnosItems"
       selected-id="fnos"
@@ -525,152 +543,5 @@ onMounted(async () => {
 <style scoped>
 .proxy-enhancement-cards {
   display: contents;
-}
-
-.tool-card {
-  position: relative;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  padding: 14px;
-  overflow: hidden;
-  transition: var(--transition);
-}
-
-.tool-card:hover {
-  box-shadow: var(--shadow-card);
-}
-
-.tool-card.is-enabled {
-  border-color: color-mix(in srgb, var(--success) 40%, var(--border));
-}
-
-.tool-card__bar {
-  position: absolute;
-  inset: 0 0 0 auto;
-  width: 4px;
-}
-
-.tool-card__bar.is-enabled {
-  background: linear-gradient(180deg, var(--success), #059669);
-}
-
-.tool-card__bar.is-disabled {
-  background: linear-gradient(180deg, #9ca3af, #6b7280);
-}
-
-.tool-card__head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.tool-card__logo {
-  width: 42px;
-  height: 42px;
-  border-radius: var(--radius-md);
-  flex-shrink: 0;
-  object-fit: contain;
-}
-
-.tool-card__meta {
-  flex: 1;
-  min-width: 0;
-}
-
-.tool-card__name {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  line-height: 1.35;
-}
-
-.tool-card__driver {
-  margin: 2px 0 0;
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--text-muted);
-}
-
-.tool-card__desc {
-  display: -webkit-box;
-  flex: 0 0 36px;
-  height: 36px;
-  margin: 10px 0 0;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  font-size: 13px;
-  line-height: 18px;
-  color: var(--text-regular);
-}
-
-.tool-card__row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-width: 0;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--border);
-}
-
-.tool-card__stat {
-  display: flex;
-  align-items: baseline;
-  min-width: 0;
-  gap: 6px;
-}
-
-.tool-card__num {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.tool-card__label {
-  font-size: 12px;
-  white-space: nowrap;
-  color: var(--text-muted);
-}
-
-.check-toggle {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 0;
-  padding: 0;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  background: var(--border);
-  color: var(--text-muted);
-}
-
-.check-toggle svg {
-  width: 14px;
-  height: 14px;
-}
-
-.check-toggle.on {
-  background: var(--success);
-  color: #fff;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.16);
-}
-
-.check-toggle:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 </style>

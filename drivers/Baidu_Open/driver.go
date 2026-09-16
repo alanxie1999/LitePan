@@ -14,8 +14,10 @@ import (
 )
 
 type Driver struct {
-	add    Addition
-	client *http.Client
+	driver.AuthRefreshControl
+	add          Addition
+	client       *http.Client
+	uploadClient *http.Client
 
 	oauthBase string
 
@@ -73,6 +75,9 @@ func (d *Driver) Init(ctx context.Context) error {
 	if d.client == nil {
 		d.client = httpx.NewClient(httpx.ClientOptions{Timeout: 30 * time.Second})
 	}
+	if d.uploadClient == nil {
+		d.uploadClient = httpx.NewStreamingClient(d.client, 60*time.Second)
+	}
 
 	d.mu.Lock()
 	token := d.token
@@ -101,6 +106,7 @@ func (d *Driver) Init(ctx context.Context) error {
 
 func (d *Driver) Drop(context.Context) error {
 	httpx.CloseClient(d.client)
+	httpx.CloseClient(d.uploadClient)
 	return nil
 }
 

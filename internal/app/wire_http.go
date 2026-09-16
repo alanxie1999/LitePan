@@ -69,9 +69,6 @@ func wireHTTPServer(cfg config.Config, logs *logx.Manager, st *storeBundle, core
 		Cache:     core.cache,
 		DB:        st.db,
 		Logs:      logs,
-		LogRetentionDays: func() int {
-			return st.settings.Int(settings.KeyLogRetentionDays)
-		},
 		UploadActivePaths: svc.uploads.ActiveTempPaths,
 		OfflineTempRoots:  svc.offlineDownloads.BuiltinTempRoots,
 		OfflineActivePaths: func(ctx context.Context) []string {
@@ -158,7 +155,7 @@ func wireHTTPServer(cfg config.Config, logs *logx.Manager, st *storeBundle, core
 		AuthSched:         core.sched,
 		AdminAuth:         adminauth.New(st.store.Configs, core.secret, logs.For(logx.ModuleAPI)),
 		Notifications:     notifySvc,
-		Announcement:      announcement.New(announcement.DefaultURL, logs.For(logx.ModuleAPI)),
+		Announcement:      announcement.New(announcement.DefaultURL),
 		BackupRestore:     backupRestoreSvc,
 		SpaceCleanup:      spaceCleanupSvc,
 		CoverExtract:      coverExtractSvc,

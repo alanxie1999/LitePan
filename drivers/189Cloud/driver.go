@@ -13,6 +13,7 @@ import (
 )
 
 type Driver struct {
+	driver.AuthRefreshControl
 	add          Addition
 	client       *http.Client
 	uploadClient *http.Client
@@ -53,6 +54,7 @@ var config = driver.Config{
 	ProvideHashes:          []string{"md5"},
 	RapidUploadHashes:      []string{"md5"},
 	UploadConflictPolicies: []string{"overwrite", "rename", "skip", "fail"},
+	InternalExperimental:   true,
 }
 
 func New() driver.Driver { return &Driver{} }
@@ -79,11 +81,7 @@ func (d *Driver) Init(ctx context.Context) error {
 		d.client = httpx.NewClient(httpx.ClientOptions{Timeout: 30 * time.Second})
 	}
 	if d.uploadClient == nil {
-		d.uploadClient = httpx.NewClient(httpx.ClientOptions{
-			Timeout:            300 * time.Second,
-			DisableCompression: true,
-			DisableKeepAlives:  true,
-		})
+		d.uploadClient = httpx.NewStreamingClient(d.client, 60*time.Second)
 	}
 	d.mu.Lock()
 	if d.accessToken == "" {
@@ -101,11 +99,14 @@ func (d *Driver) Init(ctx context.Context) error {
 	if !d.hasSession() {
 		if access != "" {
 			if err := d.refreshSession(ctx, access); err != nil {
+				// 仅当会话确实失效（认证类错误）才回退换取新 Token；
+				// 网络故障/503/限流等非认证错误直接上报，交给统一节流重试，
+				// 不额外换 Token、不追加一次会话请求（约定：非认证错误不触发认证刷新）。
 				if !isSessionExpired(err) {
 					return err
 				}
-				if _, err := d.doRefresh(ctx); err != nil {
-					return err
+				if _, rerr := d.doRefresh(ctx); rerr != nil {
+					return rerr
 				}
 			}
 		} else {

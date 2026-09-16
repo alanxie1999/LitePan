@@ -74,12 +74,7 @@ func (s *Service) runRule(id int64, triggerSource string) {
 		}
 		if shouldRunAction(action.Condition, previousSuccess, i) {
 			s.setRunningStep(id, i, actionDisplayName(action), action.Type)
-			runAction := action
-			if action.Type == domain.AutomationActionCacheClear {
-				runAction.Params = cloneMap(action.Params)
-				runAction.Params["_following_actions"] = actions[i+1:]
-			}
-			result := s.executeAction(ctx, runAction)
+			result := s.executeAction(ctx, action, actions[i+1:])
 			for k, v := range result {
 				step[k] = v
 			}
@@ -114,10 +109,10 @@ func (s *Service) runRule(id int64, triggerSource string) {
 	_ = s.rules.Update(ctx, rule)
 }
 
-func (s *Service) executeAction(ctx context.Context, action RuleAction) map[string]any {
+func (s *Service) executeAction(ctx context.Context, action RuleAction, following []RuleAction) map[string]any {
 	switch action.Type {
 	case domain.AutomationActionCacheClear:
-		return s.runCacheClear(ctx, action.Params)
+		return s.runCacheClear(ctx, following)
 	case domain.AutomationActionDelay:
 		return s.runDelay(ctx, action.Params)
 	case domain.AutomationActionOrganize:
@@ -128,56 +123,44 @@ func (s *Service) executeAction(ctx context.Context, action RuleAction) map[stri
 		return s.runStrmScrape(ctx, action.Params)
 	case domain.AutomationActionEmbyRefresh:
 		return s.runEmbyRefresh(ctx, action.Params)
+	case domain.AutomationActionEmbyCompleteMediaInfo:
+		return s.runEmbyCompleteMediaInfo(ctx, action.Params)
 	default:
 		return map[string]any{"status": "failed", "success": false, "message": "动作类型不支持"}
 	}
 }
 
-func (s *Service) runCacheClear(ctx context.Context, params map[string]any) map[string]any {
+func (s *Service) runCacheClear(ctx context.Context, following []RuleAction) map[string]any {
 	if s.files == nil {
 		return map[string]any{"status": "failed", "success": false, "message": "文件服务未就绪"}
 	}
-	targets := s.collectCacheClearTargets(ctx, params["_following_actions"])
-	if len(targets) == 0 {
+	accountIDs := s.collectCacheClearAccountIDs(ctx, following)
+	if len(accountIDs) == 0 {
 		return map[string]any{"status": "failed", "success": false, "message": "刷新目录后面需要有整理任务或 STRM 任务"}
 	}
-	cleaned := make([]map[string]any, 0, len(targets))
-	for _, target := range targets {
-		if _, err := s.files.List(ctx, target.accountID, target.parentID, true); err != nil {
-			return map[string]any{"status": "failed", "success": false, "message": err.Error()}
-		}
-		cleaned = append(cleaned, map[string]any{
-			"account_id": target.accountID,
-			"parent_id":  target.parentID,
-			"path":       target.path,
-		})
+	for _, accountID := range accountIDs {
+		s.files.InvalidateDirectoryCaches(accountID)
 	}
 	return map[string]any{
 		"status":  "success",
 		"success": true,
-		"message": fmt.Sprintf("已刷新 %d 个目录", len(cleaned)),
-		"data":    map[string]any{"targets": cleaned},
+		"message": fmt.Sprintf("已刷新 %d 个账号的目录缓存", len(accountIDs)),
+		"data":    map[string]any{"account_ids": accountIDs},
 	}
 }
 
-func (s *Service) collectCacheClearTargets(ctx context.Context, raw any) []cacheClearTarget {
-	actions, ok := raw.([]RuleAction)
-	if !ok {
-		return nil
-	}
-	targets := make([]cacheClearTarget, 0)
-	seen := make(map[string]struct{})
-	addTarget := func(accountID int64, parentID string, path string) {
-		parentID = strings.TrimSpace(parentID)
-		if accountID <= 0 || parentID == "" {
+func (s *Service) collectCacheClearAccountIDs(ctx context.Context, actions []RuleAction) []int64 {
+	accountIDs := make([]int64, 0)
+	seen := make(map[int64]struct{})
+	addAccount := func(accountID int64) {
+		if accountID <= 0 {
 			return
 		}
-		key := fmt.Sprintf("%d|%s", accountID, parentID)
-		if _, exists := seen[key]; exists {
+		if _, exists := seen[accountID]; exists {
 			return
 		}
-		seen[key] = struct{}{}
-		targets = append(targets, cacheClearTarget{accountID: accountID, parentID: parentID, path: strings.TrimSpace(path)})
+		seen[accountID] = struct{}{}
+		accountIDs = append(accountIDs, accountID)
 	}
 	for _, action := range actions {
 		switch action.Type {
@@ -198,10 +181,7 @@ func (s *Service) collectCacheClearTargets(ctx context.Context, raw any) []cache
 			if accountID <= 0 {
 				accountID = int64(anyInt(cfg["account_id"]))
 			}
-			addTarget(accountID, anyString(cfg["target_directory_id"]), anyString(cfg["target_directory"]))
-			if strings.TrimSpace(anyString(cfg["action_type"])) == "move" {
-				addTarget(accountID, anyString(cfg["target_root_id"]), anyString(cfg["target_root"]))
-			}
+			addAccount(accountID)
 		case domain.AutomationActionStrm:
 			if s.strm == nil {
 				continue
@@ -214,10 +194,10 @@ func (s *Service) collectCacheClearTargets(ctx context.Context, raw any) []cache
 			if err != nil {
 				continue
 			}
-			addTarget(task.AccountID, task.ParentID, task.Path)
+			addAccount(task.AccountID)
 		}
 	}
-	return targets
+	return accountIDs
 }
 
 func (s *Service) runDelay(ctx context.Context, params map[string]any) map[string]any {
@@ -294,7 +274,7 @@ func evaluateOrganizeAction(summary, params map[string]any, runCompleted bool) o
 	failed := max(0, anyInt(summary["failed"]))
 	skipped := max(0, anyInt(summary["skipped"]))
 	normalSkipped := max(0, anyInt(summary["normal_skipped"]))
-	abnormalSkipped := skipped
+	abnormalSkipped := max(0, skipped-normalSkipped)
 	if summary["abnormal_skipped"] != nil {
 		abnormalSkipped = max(0, anyInt(summary["abnormal_skipped"]))
 	}
@@ -319,6 +299,9 @@ func evaluateOrganizeAction(summary, params map[string]any, runCompleted bool) o
 		message = fmt.Sprintf("整理存在失败项：%d 个", failed)
 	case risk > float64(maxRisk):
 		message = fmt.Sprintf("整理异常比例 %s%% 超过允许值 %d%%", strconv.FormatFloat(risk, 'f', -1, 64), maxRisk)
+	}
+	if abnormalSkipped > 0 {
+		message += fmt.Sprintf("（需关注 %d 项 / 需处理 %d 项，详情见整理日志）", abnormalSkipped, riskTotal)
 	}
 	return organizeActionOutcome{
 		success:         success,
@@ -497,6 +480,45 @@ func (s *Service) runEmbyRefresh(ctx context.Context, params map[string]any) map
 	}
 }
 
+func (s *Service) runEmbyCompleteMediaInfo(ctx context.Context, params map[string]any) map[string]any {
+	if s.emby == nil {
+		return map[string]any{"status": "failed", "success": false, "message": "Emby 服务未就绪"}
+	}
+	result, err := s.emby.CompleteMediaInfo(ctx, embyproxy.CompleteMediaInfoRequest{
+		ConfigID:  strings.TrimSpace(anyString(params["emby_id"])),
+		Mode:      strings.TrimSpace(anyString(params["mode"])),
+		LibraryID: strings.TrimSpace(anyString(params["library_id"])),
+	})
+	if err != nil {
+		return map[string]any{"status": "failed", "success": false, "message": err.Error()}
+	}
+	status, success := "success", true
+	message := fmt.Sprintf("已检查 %d 个条目，补全 %d 个", result.Scanned, result.Completed)
+	if result.Missing == 0 {
+		message = fmt.Sprintf("已检查 %d 个条目，媒体信息均完整", result.Scanned)
+	} else if result.Failed > 0 || result.TimedOut > 0 || result.Unchanged > 0 {
+		status = "partial"
+		message = fmt.Sprintf("已检查 %d 个条目，补全 %d 个，仍缺失 %d 个，等待超时 %d 个，失败 %d 个", result.Scanned, result.Completed, result.Unchanged, result.TimedOut, result.Failed)
+		if result.TimedOut > 0 {
+			message += "；超时条目可能仍在 Emby 后台处理"
+		}
+		if len(result.FailedItems) > 0 {
+			names := result.FailedItems
+			if len(names) > 3 {
+				names = names[:3]
+			}
+			message += "；失败：" + strings.Join(names, "、")
+			if len(result.FailedItems) > len(names) {
+				message += fmt.Sprintf("等 %d 个", len(result.FailedItems))
+			}
+		}
+		if result.Completed == 0 && result.TimedOut == 0 && result.Unchanged == 0 {
+			status, success = "failed", false
+		}
+	}
+	return map[string]any{"status": status, "success": success, "message": message, "data": result}
+}
+
 type submitRunResult struct {
 	queued bool
 }
@@ -624,6 +646,8 @@ func actionDisplayName(action RuleAction) string {
 		return "刷新目录"
 	case domain.AutomationActionEmbyRefresh:
 		return "Emby 刷库"
+	case domain.AutomationActionEmbyCompleteMediaInfo:
+		return "Emby 补全媒体信息"
 	default:
 		return action.Type
 	}

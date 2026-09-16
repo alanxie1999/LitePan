@@ -6,10 +6,6 @@ export interface CloudTool115Status {
   available: boolean;
 }
 
-export interface CloudTool115Accounts {
-  accounts: { id: number; name: string; is_active: boolean }[];
-}
-
 export interface LocalUploadMapping {
   name: string;
   path: string;
@@ -73,7 +69,8 @@ export type ClassificationTemplateKind = "media" | "region" | "genre" | "custom"
 export interface ClassificationRule {
   name: string;
   condition: string;
-  fallback_to_self?: boolean;
+  fallback_mode?: "self" | "directory";
+  fallback_dir?: string;
   children?: ClassificationRule[];
 }
 

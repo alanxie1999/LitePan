@@ -4,10 +4,11 @@ package proxybase
 
 import (
 	"bytes"
+	"log/slog"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -17,12 +18,69 @@ import (
 )
 
 // StrmPlayPathRE 匹配 LitePan STRM play URL（与 internal/strm 播放链接格式一致）。
-var StrmPlayPathRE = regexp.MustCompile(`(?i)^/api/strm/play/(\d+)/([^/]+)/t/([^/]+)/n/([^/?#\s]+)(?:/s/([^/?#\s]+))?$`)
+var StrmPlayPathRE = strm.PlayPathRE
+
+// StrmPathPlayPathRE 匹配延迟按路径解析的 LitePan STRM URL。
+var StrmPathPlayPathRE = strm.PathPlayPathRE
+
+type STRMReference = strm.PlayReference
+
+// ParseLitePanSTRMReference 同时解析文件 ID 与路径两种 STRM 地址。
+func ParseLitePanSTRMReference(value string) (STRMReference, bool) {
+	return strm.ParsePlayReference(value)
+}
+
+func IsLitePanSTRMPath(value string) bool {
+	pathValue := LitePanPath(value)
+	return StrmPlayPathRE.MatchString(pathValue) || StrmPathPlayPathRE.MatchString(pathValue)
+}
 
 // HopByHopHeaderNames 是反向代理转发时需剥离的 hop-by-hop 头。
+// 注意：升级请求（WebSocket）必须保留 connection/upgrade，见 NewUpgradeProxy。
 var HopByHopHeaderNames = map[string]struct{}{
 	"connection": {}, "keep-alive": {}, "proxy-authenticate": {}, "proxy-authorization": {},
 	"te": {}, "trailers": {}, "transfer-encoding": {}, "upgrade": {}, "host": {},
+}
+
+// IsUpgradeRequest 判断是否为 HTTP 升级请求（WebSocket 等）。
+func IsUpgradeRequest(r *http.Request) bool {
+	if r == nil {
+		return false
+	}
+	return strings.TrimSpace(r.Header.Get("Upgrade")) != ""
+}
+
+// NewUpgradeProxy 构造用于升级请求（WebSocket）的反向代理。
+// Go 原生 ReverseProxy 会保留 Upgrade/Connection、在上游返回 101 时 Hijack 客户端连接做
+// 双向字节转发，因此无需第三方 WebSocket 库。
+// target 需已包含完整路径与 query（调用方沿用各自的 targetURL 拼接逻辑）。
+// transport 传入调用方的 Transport 以复用 TLS、代理等设置，为 nil 时用默认。
+func NewUpgradeProxy(target *url.URL, transport http.RoundTripper, log *slog.Logger) *httputil.ReverseProxy {
+	if target == nil {
+		return nil
+	}
+	return &httputil.ReverseProxy{
+		Transport: transport,
+		// -1 表示不缓冲，立即回写（升级隧道必须逐字节转发）。
+		FlushInterval: -1,
+		Rewrite: func(pr *httputil.ProxyRequest) {
+			out := pr.Out
+			// 直接设定上游地址：不能走 SetURL，否则会把请求路径再拼一次。
+			out.URL.Scheme = target.Scheme
+			out.URL.Host = target.Host
+			out.URL.Path = target.Path
+			out.URL.RawPath = target.RawPath
+			out.URL.RawQuery = target.RawQuery
+			out.Host = target.Host
+			pr.SetXForwarded()
+		},
+		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
+			if log != nil {
+				log.Warn("反代升级请求失败", "path", r.URL.Path, "error", err)
+			}
+			w.WriteHeader(http.StatusBadGateway)
+		},
+	}
 }
 
 // TestRequestTimeout 是反代连通性测试的上游请求超时。
@@ -30,20 +88,11 @@ const TestRequestTimeout = 20 * time.Second
 
 // ParseLitePanSTRMURL 从 STRM play URL 解析账号 ID 与网盘 file_id。
 func ParseLitePanSTRMURL(value string) (int64, string, bool) {
-	path := LitePanPath(value)
-	m := StrmPlayPathRE.FindStringSubmatch(path)
-	if len(m) < 3 {
+	ref, ok := ParseLitePanSTRMReference(value)
+	if !ok || ref.PathBased {
 		return 0, "", false
 	}
-	accountID, err := strconv.ParseInt(m[1], 10, 64)
-	if err != nil || accountID <= 0 {
-		return 0, "", false
-	}
-	fileID, err := strm.DecodeFileKey(m[2])
-	if err != nil || fileID == "" {
-		return 0, "", false
-	}
-	return accountID, fileID, true
+	return ref.AccountID, ref.FileID, true
 }
 
 // LitePanPath 从 STRM 播放地址中提取路径部分（去掉 host 与 query）。
