@@ -88,12 +88,12 @@
 
 ## ▎ 快速开始
 
-**Docker Compose 部署** · 镜像标签：`v1.1`
+**Docker Compose 部署** · 镜像标签：`latest`
 
 ```yaml
 services:
   litepan:
-    image: ajun59420/litepan:v1.1
+    image: ajun59420/litepan:latest
     container_name: litepan
     restart: unless-stopped
     ports:
