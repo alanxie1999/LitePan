@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"litepan/internal/domain"
-	"litepan/internal/proxybase"
 	"litepan/internal/strm"
 )
 
@@ -43,9 +42,9 @@ func parseStrmCloudFile(path string) (int64, string, bool) {
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-		accountID, fileID, ok := proxybase.ParseLitePanSTRMURL(line)
-		if ok {
-			return accountID, fileID, true
+		ref, ok := strm.ParsePlayReference(line)
+		if ok && ref.FileID != "" {
+			return ref.AccountID, ref.FileID, true
 		}
 	}
 	return 0, "", false

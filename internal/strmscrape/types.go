@@ -14,27 +14,27 @@ const (
 
 // Item 表示一部作品（电影文件夹 / 剧集根目录），不是单个 .strm。
 type Item struct {
-	ID         string `json:"id"`
-	RelDir     string `json:"rel_dir"`
-	StrmName   string `json:"strm_name,omitempty"`
+	ID         string   `json:"id"`
+	RelDir     string   `json:"rel_dir"`
+	StrmName   string   `json:"strm_name,omitempty"`
 	Title      string   `json:"title"`
 	Year       *int     `json:"year,omitempty"`
 	Rating     *float64 `json:"rating,omitempty"`
 	MediaType  string   `json:"media_type"`
-	Status     string `json:"status"`
-	HasNFO     bool   `json:"has_nfo"`
-	HasPoster  bool   `json:"has_poster"`
-	HasPending bool   `json:"has_pending"`
-	ManualDone bool   `json:"manual_done"`
-	TMDBID     string `json:"tmdb_id,omitempty"`
-	PosterURL  string `json:"poster_url,omitempty"`
-	FolderName string `json:"folder_name,omitempty"`
-	FileCount  int    `json:"file_count"`
-	EpLocal    int    `json:"ep_local,omitempty"`
-	EpTMDB     int    `json:"ep_tmdb,omitempty"`
-	EpScraped  int    `json:"ep_scraped,omitempty"`
-	TVState    string `json:"tv_state,omitempty"` // ended|updating
-	AddedAt    string `json:"added_at,omitempty"`
+	Status     string   `json:"status"`
+	HasNFO     bool     `json:"has_nfo"`
+	HasPoster  bool     `json:"has_poster"`
+	HasPending bool     `json:"has_pending"`
+	ManualDone bool     `json:"manual_done"`
+	TMDBID     string   `json:"tmdb_id,omitempty"`
+	PosterURL  string   `json:"poster_url,omitempty"`
+	FolderName string   `json:"folder_name,omitempty"`
+	FileCount  int      `json:"file_count"`
+	EpLocal    int      `json:"ep_local,omitempty"`
+	EpTMDB     int      `json:"ep_tmdb,omitempty"`
+	EpScraped  int      `json:"ep_scraped,omitempty"`
+	TVState    string   `json:"tv_state,omitempty"` // ended|updating
+	AddedAt    string   `json:"added_at,omitempty"`
 }
 
 type ItemListSort string
