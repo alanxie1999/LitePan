@@ -29,6 +29,7 @@ import (
 	"litepan/internal/cache"
 	"litepan/internal/cacheretention"
 	"litepan/internal/classifyorganize"
+	"litepan/internal/cloudshare"
 	"litepan/internal/coverextract"
 	"litepan/internal/crosstransfer"
 	"litepan/internal/domain"
@@ -68,6 +69,7 @@ type Deps struct {
 	Favorites         *favorites.Service
 	Uploads           *upload.Manager
 	OfflineDownloads  *offlinedownload.Service
+	CloudShares       *cloudshare.Service
 	Playback          *playback.Service
 	Strm              *strm.Service
 	CacheRetention    *cacheretention.Service
@@ -109,6 +111,7 @@ type Handler struct {
 	favorites         *favorites.Service
 	uploads           *upload.Manager
 	offlineDownloads  *offlinedownload.Service
+	cloudShares       *cloudshare.Service
 	playback          *playback.Service
 	strm              *strm.Service
 	cacheRetention    *cacheretention.Service
@@ -159,6 +162,7 @@ func NewRouter(d Deps) http.Handler {
 		favorites:         d.Favorites,
 		uploads:           d.Uploads,
 		offlineDownloads:  d.OfflineDownloads,
+		cloudShares:       d.CloudShares,
 		playback:          d.Playback,
 		strm:              d.Strm,
 		cacheRetention:    d.CacheRetention,
@@ -249,6 +253,10 @@ func NewRouter(d Deps) http.Handler {
 					r.Delete("/{id}", h.deleteBackup)
 				})
 				r.Post("/update-credentials", h.adminUpdateCredentials)
+				r.Post("/two-factor/setup", h.adminBeginTwoFactorSetup)
+				r.Post("/two-factor/confirm", h.adminConfirmTwoFactorSetup)
+				r.Post("/two-factor/disable", h.adminDisableTwoFactor)
+				r.Post("/two-factor/recovery-codes", h.adminRegenerateTwoFactorRecoveryCodes)
 				r.Post("/webdav-config", h.adminWebDAVConfig)
 				r.Get("/emby/configs", h.listEmbyConfigs)
 				r.Put("/emby/configs", h.replaceEmbyConfigs)
@@ -494,6 +502,13 @@ func NewRouter(d Deps) http.Handler {
 					r.Post("/tasks/refresh", h.refreshOfflineDownloadTasks)
 					r.Post("/tasks/batch-delete", h.batchDeleteOfflineDownloadTasks)
 					r.Delete("/tasks/{taskID}", h.deleteOfflineDownloadTask)
+				})
+				r.Route("/shares", func(r chi.Router) {
+					r.Get("/capabilities", h.cloudShareCapabilities)
+					r.Get("/", h.listCloudShares)
+					r.Post("/", h.createCloudShare)
+					r.Put("/", h.updateCloudShares)
+					r.Post("/cancel", h.cancelCloudShares)
 				})
 			})
 		})

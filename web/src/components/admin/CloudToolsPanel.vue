@@ -33,25 +33,28 @@ function matches(title: string) {
   return containsQuery(title, searchQuery.value);
 }
 
-const hasMatch = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase();
-  return !q || cardTitles.some((t) => t.toLowerCase().includes(q));
-});
+const activeQuery = computed(() => searchQuery.value.trim());
+const hasMatch = computed(() => !activeQuery.value || cardTitles.some((title) => matches(title)));
 
+// 收起搜索框时保留筛选。
 function closeSearch() {
+  emit("update:searchOpen", false);
+}
+
+// 离开页面时清除筛选。
+function clearSearch() {
   searchQuery.value = "";
   emit("update:searchOpen", false);
 }
 
+defineExpose({ clearSearch });
+
 watch(
   () => props.searchOpen,
   async (open) => {
-    if (open) {
-      await nextTick();
-      searchInputRef.value?.focus();
-    } else {
-      searchQuery.value = "";
-    }
+    if (!open) return;
+    await nextTick();
+    searchInputRef.value?.focus();
   },
 );
 
@@ -176,7 +179,7 @@ async function clearCache() {
 
       <CoverExtractToolCard :search-query="searchQuery" />
     </div>
-    <div v-if="searchOpen && !hasMatch" class="tool-search__empty">没有找到相关工具</div>
+    <div v-if="!hasMatch" class="tool-search__empty">没有找到相关工具</div>
   </div>
 </template>
 

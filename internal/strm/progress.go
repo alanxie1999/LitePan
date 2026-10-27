@@ -115,6 +115,18 @@ func (s *Service) IsTaskRunning(taskID int64) bool {
 	return s.isTaskRunning(taskID)
 }
 
+func (s *Service) IsTaskBusy(taskID int64) bool {
+	if s == nil || taskID <= 0 {
+		return false
+	}
+	s.mu.Lock()
+	_, fileBusy := s.fileOperations[taskID]
+	running := s.running[taskID]
+	recentInternalChange := time.Now().Before(s.internalMutationUntil[taskID])
+	s.mu.Unlock()
+	return running || fileBusy || recentInternalChange
+}
+
 func (s *Service) TaskListMeta(taskID int64, dbStatus string) TaskListMeta {
 	s.mu.Lock()
 	running := s.running[taskID]

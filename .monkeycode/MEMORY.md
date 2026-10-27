@@ -42,3 +42,14 @@ Entries discovered by the Agent during task execution should follow this format:
   - Upstream renamed proxybase.ParseLitePanSTRMURL to strm.ParsePlayReference (returns strm.PlayReference). Keep delete.go's parseStrmCloudFile on the new API.
   - Local infra kept over upstream: drivers/115 tracked (do not restore the `drivers/115/` line in .gitignore), README banner for the 4 features, docker-compose image tags point to ajun59420/litepan, internal/api/web embedded assets are rebuilt from web/src before syncing.
   - STRM index schema is version "3" (rating column) in internal/strmscrape/index.go; older indexes are dropped and rebuilt automatically by ensureIndexLocked.
+
+[Project Knowledge Summary]
+- Date: 2026-10-27
+- Context: Discovered by Agent while performing "sync upstream Ponphil/LitePan (v0.5.7, e0e29c0)" while excluding upstream's STRM delete monitor
+- Category: Workflow & Collaboration
+- Instructions:
+  - Second upstream sync used branch `261027-feat-sync-upstream-keep-local`, merge base 42a3ee9, upstream tip e0e29c0 (v0.5.7). Merge conflicts only in Dockerfile, README.md, internal/api/web (rebuilt from web/src), not in Go logic.
+  - Upstream's STRM delete monitor (`internal/strmdelete/`, `internal/api/strm_delete_tool.go`, `web/src/components/admin/StrmDeleteToolCard.vue`, `/admin/tools/strm-delete` routes) is intentionally EXCLUDED from this fork: it is not wired in router/app/wire_services, not rendered in CloudToolsPanel, and not started.
+  - Keep the 4 local STRM scrape features intact after every sync; `IsTaskBusy`/`IsTaskMediaFile`/`internalMutationUntil` in internal/strm and the `strmDeleteApi` types in web/src/api/cloudTools.ts must stay only because the un-wired upstream files still reference them.
+  - Rebuild frontend before building Go so embedded assets match: `cd web && npm ci && npm run type-check && npm run build`, then `go build -tags fuse -trimpath -ldflags="-s -w" -o litepan ./cmd/litepan`.
+  - Verify local features with `go test ./internal/strmscrape ./internal/strm`.

@@ -9,6 +9,7 @@ import (
 	"litepan/internal/automation"
 	"litepan/internal/cacheretention"
 	"litepan/internal/classifyorganize"
+	"litepan/internal/cloudshare"
 	"litepan/internal/config"
 	"litepan/internal/crosstransfer"
 	"litepan/internal/domain"
@@ -33,6 +34,7 @@ type servicesBundle struct {
 	files            *file.Service
 	uploads          *upload.Manager
 	offlineDownloads *offlinedownload.Service
+	cloudShares      *cloudshare.Service
 	playback         *playback.Service
 	account          *account.Service
 	accountProfile   *accountprofile.Service
@@ -93,6 +95,7 @@ func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *
 		Bus:      core.bus,
 		Log:      logs.For(logx.ModuleFileOp),
 	})
+	cloudShareSvc := cloudshare.New(core.exec)
 	fusemount.ApplyConfiguredMountRoot(context.Background(), st.store.Configs)
 	fuseSvc := fusemount.New(fusemount.Options{
 		Repo:      st.store.FuseMounts,
@@ -208,6 +211,7 @@ func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *
 		files:            fileSvc,
 		uploads:          uploadSvc,
 		offlineDownloads: offlineDownloadSvc,
+		cloudShares:      cloudShareSvc,
 		playback:         playbackSvc,
 		account:          accountSvc,
 		accountProfile:   accountProfileSvc,
